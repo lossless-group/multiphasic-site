@@ -132,7 +132,9 @@ pnpm only — never npm, npx, or yarn. Not a member of the astro-knots pnpm
 workspace; installs standalone with its own lockfile so it can deploy
 independently.
 
-To run this alongside the two sibling spikes on auto-assigned ports:
+To run this alongside the two sibling spikes on auto-assigned ports — from an
+[astro-knots](https://github.com/lossless-group/astro-knots) workspace checkout,
+where all three are present:
 
 ```bash
 ../../scripts/dev-sites.sh
