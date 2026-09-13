@@ -1,0 +1,286 @@
+---
+/* ============================================================================
+ * DiptychType — the typographic system for Direction C, declared once.
+ *
+ * Renders nothing. Emits the shared editorial type scale as global CSS so the
+ * eight beat components and the two flare demo pages all set the argument in
+ * the same voice instead of each re-deriving it.
+ *
+ * THE VOICE
+ *   Display  Fraunces, and specifically its optical-size axis. Headlines run
+ *            at opsz 144 — the high-contrast, thin-hairline cut a display face
+ *            is designed for. Captions run at opsz 9, where the same family
+ *            thickens up and stays readable at 11px. Using the axis rather
+ *            than one static weight is what keeps this from being Generic
+ *            Editorial Serif.
+ *   Body     Inter. Humanist, quiet, never competing.
+ *   Data     JetBrains Mono. Every number, unit, magnitude, tag and label.
+ *
+ * THE SIDE MODIFIERS
+ *   `.on-past` and `.on-future` are how the color law is enforced in markup.
+ *   A component author writes `.dx-num.on-past` and gets coral; the same class
+ *   with `.on-future` gets cyan. There is no way to spell "coral" directly.
+ * ========================================================================== */
+---
+
+<style is:global>
+  /* — structural labels ---------------------------------------------------- */
+  .dx-eyebrow {
+    font-family: var(--font-eyebrow);
+    font-size: clamp(0.62rem, 0.72vw, 0.72rem);
+    font-weight: 500;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    line-height: 1.4;
+  }
+  .dx-eyebrow.on-past {
+    color: var(--color-cost-ink);
+  }
+  .dx-eyebrow.on-future {
+    color: var(--color-gain);
+  }
+
+  .dx-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5em;
+    font-family: var(--font-data);
+    font-size: 0.62rem;
+    font-weight: 500;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+  }
+  .dx-tag::before {
+    content: '';
+    width: 0.5em;
+    height: 0.5em;
+    background: currentColor;
+  }
+  .dx-tag.on-past {
+    color: var(--color-cost-ink);
+  }
+  .dx-tag.on-future {
+    color: var(--color-gain);
+  }
+
+  /* — the argument --------------------------------------------------------- */
+  .dx-display,
+  .dx-h2,
+  .dx-h3 {
+    font-family: var(--font-display);
+    font-optical-sizing: none;
+    text-wrap: balance;
+    margin: 0;
+  }
+  .dx-display {
+    font-size: clamp(2.35rem, 5.1vw, 4.6rem);
+    font-variation-settings: 'opsz' 144, 'wght' 400;
+    line-height: 0.98;
+    letter-spacing: -0.022em;
+  }
+  .dx-h2 {
+    font-size: clamp(1.7rem, 3.1vw, 2.75rem);
+    font-variation-settings: 'opsz' 144, 'wght' 400;
+    line-height: 1.06;
+    letter-spacing: -0.018em;
+  }
+  .dx-h3 {
+    font-size: clamp(1.15rem, 1.6vw, 1.5rem);
+    font-variation-settings: 'opsz' 48, 'wght' 600;
+    line-height: 1.18;
+    letter-spacing: -0.01em;
+  }
+  .dx-display em,
+  .dx-h2 em {
+    font-style: italic;
+    font-variation-settings: 'opsz' 144, 'wght' 300;
+  }
+
+  .dx-lede {
+    font-family: var(--font-body);
+    font-size: clamp(1rem, 1.15vw, 1.16rem);
+    font-weight: 300;
+    line-height: 1.55;
+    letter-spacing: 0.002em;
+    margin: 0;
+    max-width: 42ch;
+  }
+  .dx-prose {
+    font-family: var(--font-body);
+    font-size: clamp(0.92rem, 1vw, 1rem);
+    font-weight: 300;
+    line-height: 1.68;
+    margin: 0;
+    max-width: 46ch;
+  }
+  .dx-prose p {
+    margin: 0 0 0.9em;
+  }
+  .dx-prose p:last-child {
+    margin-bottom: 0;
+  }
+  .dx-prose.on-past {
+    color: var(--color-past-text-muted);
+  }
+  .dx-prose.on-future {
+    color: var(--color-future-text-muted);
+  }
+  .dx-lede.on-past {
+    color: var(--color-past-text-muted);
+  }
+  .dx-lede.on-future {
+    color: var(--color-future-text-muted);
+  }
+
+  /* — data ----------------------------------------------------------------- */
+  .dx-num {
+    font-family: var(--font-data);
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    font-size: clamp(2.4rem, 4.6vw, 3.9rem);
+    line-height: 0.9;
+    letter-spacing: -0.04em;
+    display: block;
+  }
+  .dx-num.on-past {
+    color: var(--color-cost);
+  }
+  .dx-num.on-future {
+    color: var(--color-gain);
+  }
+  .dx-qual {
+    font-family: var(--font-data);
+    font-size: 0.66rem;
+    font-weight: 400;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    display: block;
+  }
+  .dx-note {
+    font-family: var(--font-data);
+    font-size: 0.66rem;
+    font-weight: 400;
+    letter-spacing: 0.12em;
+    line-height: 1.5;
+  }
+  .dx-note.on-past {
+    color: var(--color-past-text-muted);
+  }
+  .dx-note.on-future {
+    color: var(--color-future-text-muted);
+  }
+
+  /* — the deck's short heavy underline, kept, now meaning "which side" ------ */
+  .dx-rule {
+    display: block;
+    width: 3.25rem;
+    height: 3px;
+    border: 0;
+    margin: 0 0 1.1rem;
+  }
+  .dx-rule.on-past {
+    background: var(--color-cost);
+  }
+  .dx-rule.on-future {
+    background: var(--color-gain);
+  }
+
+  /* — the one button on the site ------------------------------------------- */
+  .dx-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.7em;
+    font-family: var(--font-data);
+    font-size: 0.78rem;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    text-decoration: none;
+    padding: 0.95em 1.5em;
+    border: 1px solid var(--color-gain);
+    color: var(--color-gain);
+    background: transparent;
+    transition: background-color 160ms ease, color 160ms ease;
+  }
+  .dx-cta::after {
+    content: '→';
+    transition: transform 160ms ease;
+  }
+  .dx-cta:hover {
+    background: var(--color-gain);
+    color: var(--color-future-bg);
+  }
+  .dx-cta:hover::after {
+    transform: translateX(3px);
+  }
+  .dx-cta:focus-visible {
+    outline: 2px solid var(--color-beam-core);
+    outline-offset: 3px;
+  }
+
+  /* — the shared measurement track used on the cost and result beats -------- */
+  .dx-track {
+    position: relative;
+    height: 6px;
+    width: 100%;
+    max-width: 22rem;
+    margin-top: 1rem;
+  }
+  .dx-track::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: currentColor;
+    opacity: 0.16;
+  }
+  .dx-track .dx-fill {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: var(--mag, 50%);
+    transform-origin: left center;
+    animation: dx-track-in 900ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .dx-track.on-past {
+    color: var(--color-past-text);
+  }
+  .dx-track.on-past .dx-fill {
+    background: var(--color-cost);
+  }
+  .dx-track.on-future {
+    color: var(--color-future-text);
+  }
+  .dx-track.on-future .dx-fill {
+    background: var(--color-gain);
+    width: 2px;
+  }
+  @keyframes dx-track-in {
+    from {
+      transform: scaleX(0);
+    }
+    to {
+      transform: scaleX(1);
+    }
+  }
+
+  /* A cell that carries nothing once the diptych stops being two columns.
+   * Marked in markup so the stacked layout doesn't grow bands of empty navy. */
+  @media (max-width: 899px) {
+    .dpr-past:has(> .dp-blank),
+    .dpr-future:has(> .dp-blank) {
+      display: none;
+    }
+  }
+
+  /* A figure carried forward from an earlier beat purely to be cancelled. */
+  .dx-num.is-struck {
+    text-decoration: line-through;
+    text-decoration-thickness: 3px;
+    opacity: 0.6;
+  }
+
+  a:focus-visible,
+  button:focus-visible {
+    outline: 2px solid var(--color-beam-core);
+    outline-offset: 3px;
+  }
+</style>

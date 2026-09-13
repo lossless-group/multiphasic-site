@@ -1,0 +1,363 @@
+---
+import BaseThemeLayout from '../../../layouts/BaseThemeLayout.astro';
+import DiptychType from '../../../components/diptych/DiptychType.astro';
+import ModeToggle from '../../../components/ui/ModeToggle.astro';
+import Wordmark from '../../../components/basics/Wordmark.astro';
+import BeamDivider from '../../../components/flare/BeamDivider.astro';
+
+/* Flare review page for BeamDivider. Every specimen is mounted on a real
+ * past/future ground so the seam is judged where it actually lives, and the
+ * mode toggle is at the top because the beam changes character per mode —
+ * daylight in light and dark, the ultrafast laser sheet in vibrant. */
+
+const intensities = ['low', 'medium', 'high'] as const;
+
+const props = [
+  ['orientation', "'vertical' | 'horizontal'", "'vertical'", 'Vertical is the diptych seam. Horizontal is what it becomes when the columns stack below 900px.'],
+  ['intensity', "'low' | 'medium' | 'high'", "'medium'", 'Core width, bloom spread and halo reach. High is reserved for the METASTATE beat and the vision.'],
+  ['height', 'string (CSS length)', "'100%'", 'Length along the seam’s own axis. Fills its slot by default.'],
+  ['reveal', "'none' | 'scroll' | 'drag'", "'none'", 'Whether the beam drives a reveal. ‘drag’ renders a grab handle with role="slider" and arrow-key control.'],
+  ['drift', 'boolean', 'true', 'The slow vertical wander and the core’s breathing. Off under prefers-reduced-motion regardless.'],
+  ['label', 'string', 'see source', 'Accessible name for the drag handle.'],
+];
+---
+
+<BaseThemeLayout title="BeamDivider — flare review" theme="diptych" mode="light">
+  <DiptychType />
+
+  <header class="ds-chrome">
+    <Wordmark size={24} />
+    <div class="ds-chrome-right">
+      <a href="/design-system/flare/OverdesignMass">OverdesignMass</a>
+      <a href="/diptych">Direction C</a>
+      <ModeToggle />
+    </div>
+  </header>
+
+  <main class="ds">
+    <p class="dx-eyebrow on-past">Flare &middot; Direction C</p>
+    <h1 class="dx-h2">BeamDivider</h1>
+    <p class="dx-lede ds-lede">
+      The seam of light every diptych is divided by. A sharp core, a soft bloom either side, a
+      faint halo, and a slow drift so it never settles into reading as a border. Pure CSS
+      gradients plus one small SVG for the travelling glints.
+    </p>
+
+    <section class="ds-block">
+      <h2 class="dx-h3">Intensity, on the ground it lives on</h2>
+      <p class="dx-note ds-note">Paper left, navy right — the specimen is the real thing, not a swatch.</p>
+      <div class="ds-specimens">
+        {
+          intensities.map((i) => (
+            <figure class="ds-specimen">
+              <div class="ds-stage">
+                <div class="ds-past" />
+                <div class="ds-future" />
+                <div class="ds-seam">
+                  <BeamDivider orientation="vertical" intensity={i} height="100%" />
+                </div>
+              </div>
+              <figcaption class="dx-note">intensity="{i}"</figcaption>
+            </figure>
+          ))
+        }
+      </div>
+    </section>
+
+    <section class="ds-block">
+      <h2 class="dx-h3">Horizontal — what the seam becomes when the diptych stacks</h2>
+      <div class="ds-stack">
+        <div class="ds-stack-past" />
+        <div class="ds-stack-seam">
+          <BeamDivider orientation="horizontal" intensity="medium" height="100%" drift={false} />
+        </div>
+        <div class="ds-stack-future" />
+      </div>
+      <p class="dx-note ds-note">
+        Below 900px every DiptychRow grows one of these between its two cells and the vertical
+        beam retires.
+      </p>
+    </section>
+
+    <section class="ds-block">
+      <h2 class="dx-h3">reveal="drag"</h2>
+      <p class="dx-note ds-note">
+        The handle is a real slider: pointer-draggable, arrow-key operable, and it announces how
+        far the future half has been let in. Wired on the cost beat, where the reader is looking
+        at one metric under two regimes.
+      </p>
+      <div class="ds-stage ds-stage-tall" data-demo-drag>
+        <div class="ds-past" />
+        <div class="ds-future" />
+        <div class="ds-seam">
+          <BeamDivider orientation="vertical" intensity="medium" height="100%" reveal="drag" />
+        </div>
+      </div>
+    </section>
+
+    <section class="ds-block">
+      <h2 class="dx-h3">drift={'{false}'}</h2>
+      <p class="dx-note ds-note">
+        Static seam. Also what every instance falls back to under
+        <code>prefers-reduced-motion: reduce</code> — the core, bloom and halo all stay, so the
+        divider is never lost, only the life.
+      </p>
+      <div class="ds-stage">
+        <div class="ds-past" />
+        <div class="ds-future" />
+        <div class="ds-seam">
+          <BeamDivider orientation="vertical" intensity="high" height="100%" drift={false} />
+        </div>
+      </div>
+    </section>
+
+    <section class="ds-block">
+      <h2 class="dx-h3">Props</h2>
+      <div class="ds-table-wrap">
+        <table class="ds-table">
+        <thead>
+          <tr><th>Prop</th><th>Type</th><th>Default</th><th>Notes</th></tr>
+        </thead>
+        <tbody>
+          {props.map(([n, t, d, note]) => (
+            <tr>
+              <td><code>{n}</code></td>
+              <td><code>{t}</code></td>
+              <td><code>{d}</code></td>
+              <td>{note}</td>
+            </tr>
+          ))}
+        </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="ds-block">
+      <h2 class="dx-h3">Tokens read</h2>
+      <ul class="ds-tokens">
+        <li><code>--color-beam-core</code> the hairline</li>
+        <li><code>--color-beam-bloom</code> the symmetric falloff</li>
+        <li><code>--color-beam-halo</code> the wide spill that makes it light and not ink</li>
+        <li><code>--fx-beam-opacity</code> per-mode overall strength</li>
+        <li><code>--fx-beam-box</code> the paint box the seam is drawn inside</li>
+        <li><code>--fx-drift-duration</code> the drift period</li>
+        <li><code>--fx-glow-opacity</code> folded into the halo</li>
+      </ul>
+    </section>
+  </main>
+</BaseThemeLayout>
+
+<script>
+  /* Makes the drag specimen on this page actually draggable, using the same
+   * two custom properties the live page drives: the seam position and the clip
+   * edge of the future ground are one and the same value. */
+  (() => {
+    const stage = document.querySelector<HTMLElement>('[data-demo-drag]');
+    const handle = stage?.querySelector<HTMLElement>('[data-beam-handle]');
+    if (!stage || !handle) return;
+    let dragging = false;
+    const clamp = (n: number, a: number, b: number) => Math.min(b, Math.max(a, n));
+
+    const set = (pct: number) => {
+      stage.style.setProperty('--demo-x', `${pct.toFixed(1)}%`);
+      handle.setAttribute('aria-valuenow', String(Math.round(100 - pct)));
+      handle.setAttribute('aria-valuetext', `${Math.round(100 - pct)}% specified`);
+    };
+
+    handle.addEventListener('pointerdown', (e) => {
+      dragging = true;
+      handle.setPointerCapture(e.pointerId);
+      e.preventDefault();
+    });
+    handle.addEventListener('pointermove', (e) => {
+      if (!dragging) return;
+      const r = stage.getBoundingClientRect();
+      set(clamp(((e.clientX - r.left) / r.width) * 100, 4, 96));
+    });
+    const release = (e: PointerEvent) => {
+      dragging = false;
+      try {
+        handle.releasePointerCapture(e.pointerId);
+      } catch {
+        /* capture already gone */
+      }
+    };
+    handle.addEventListener('pointerup', release);
+    handle.addEventListener('pointercancel', release);
+    handle.addEventListener('keydown', (e) => {
+      const now = parseFloat(stage.style.getPropertyValue('--demo-x') || '50');
+      if (e.key === 'ArrowLeft') set(clamp(now - 5, 4, 96));
+      else if (e.key === 'ArrowRight') set(clamp(now + 5, 4, 96));
+      else return;
+      e.preventDefault();
+    });
+  })();
+</script>
+
+<style>
+  .ds-chrome {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.85rem var(--dp-edge);
+    background: var(--color-background);
+    border-bottom: 1px solid var(--color-border);
+  }
+  .ds-chrome-right {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+  }
+  .ds-chrome-right a {
+    font-family: var(--font-data);
+    font-size: 0.68rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    text-decoration: none;
+    color: var(--color-text-muted);
+  }
+  .ds-chrome-right a:hover {
+    color: var(--color-primary);
+  }
+
+  .ds {
+    max-width: 62rem;
+    margin: 0 auto;
+    padding: clamp(2.5rem, 6vw, 4.5rem) var(--dp-edge) 6rem;
+    color: var(--color-text);
+  }
+  .ds-lede {
+    margin-top: 1rem;
+    max-width: 54ch;
+    color: var(--color-text-muted);
+  }
+  .ds-block {
+    margin-top: clamp(2.75rem, 6vw, 4rem);
+    padding-top: 1.75rem;
+    border-top: 1px solid var(--color-border);
+  }
+  .ds-note {
+    margin-top: 0.7rem;
+    color: var(--color-text-muted);
+    max-width: 60ch;
+  }
+
+  .ds-specimens {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+    gap: 1.25rem;
+    margin-top: 1.5rem;
+  }
+  .ds-specimen {
+    margin: 0;
+  }
+  .ds-specimen figcaption {
+    margin-top: 0.6rem;
+    color: var(--color-text-muted);
+  }
+
+  /* Same mechanism as the live page: two full-bleed grounds, the future one
+   * clipped at the seam, and the beam parked on the clip edge. */
+  .ds-stage {
+    position: relative;
+    height: 13rem;
+    overflow: clip;
+  }
+  .ds-stage-tall {
+    height: 18rem;
+    margin-top: 1.5rem;
+  }
+  .ds-past,
+  .ds-future {
+    position: absolute;
+    inset: 0;
+  }
+  .ds-past {
+    background: var(--color-past-bg);
+    background-image: var(--fx-past-texture, none);
+  }
+  .ds-future {
+    background: var(--color-future-bg);
+    clip-path: inset(0 0 0 var(--demo-x, 50%));
+  }
+  .ds-seam {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: var(--demo-x, 50%);
+    width: var(--fx-beam-box, 110px);
+    transform: translateX(-50%);
+  }
+
+  .ds-stack {
+    margin-top: 1.5rem;
+  }
+  .ds-stack-past {
+    height: 5.5rem;
+    background: var(--color-past-bg);
+    background-image: var(--fx-past-texture, none);
+  }
+  .ds-stack-future {
+    height: 5.5rem;
+    background: var(--color-future-bg);
+  }
+  .ds-stack-seam {
+    position: relative;
+    height: 3px;
+    --fx-beam-box: 30px;
+    background: linear-gradient(to bottom, var(--color-past-bg), var(--color-future-bg));
+  }
+  .ds-stack-seam > :global(.beam) {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    transform: translateY(-50%);
+  }
+
+  .ds-table-wrap {
+    overflow-x: auto;
+    margin-top: 1.25rem;
+  }
+  .ds-table {
+    width: 100%;
+    min-width: 34rem;
+    border-collapse: collapse;
+    font-family: var(--font-body);
+    font-size: 0.86rem;
+    font-weight: 300;
+  }
+  .ds-table th,
+  .ds-table td {
+    text-align: left;
+    vertical-align: top;
+    padding: 0.7rem 0.75rem 0.7rem 0;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .ds-table th {
+    font-family: var(--font-data);
+    font-size: 0.66rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+  }
+  code {
+    font-family: var(--font-data);
+    font-size: 0.8em;
+    color: var(--color-primary);
+  }
+  .ds-tokens {
+    list-style: none;
+    padding: 0;
+    margin: 1.25rem 0 0;
+    display: grid;
+    gap: 0.5rem;
+    font-family: var(--font-body);
+    font-size: 0.86rem;
+    font-weight: 300;
+    color: var(--color-text-muted);
+  }
+</style>

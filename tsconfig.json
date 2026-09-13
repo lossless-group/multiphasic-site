@@ -1,0 +1,33 @@
+{
+  "extends": "astro/tsconfigs/strict",
+  "include": [
+    ".astro/types.d.ts",
+    "**/*"
+  ],
+  "exclude": [
+    "dist",
+    "dist-*",
+    "node_modules",
+    ".vercel"
+  ],
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@layouts/*": [
+        "src/layouts/*"
+      ],
+      "@components/*": [
+        "src/components/*"
+      ],
+      "@flare/*": [
+        "src/components/flare/*"
+      ],
+      "@lib/*": [
+        "src/lib/*"
+      ]
+    },
+    "types": [
+      "node"
+    ]
+  }
+}

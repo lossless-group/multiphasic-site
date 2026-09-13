@@ -1,0 +1,169 @@
+---
+import DiptychSection from './DiptychSection.astro';
+import DiptychRow from './DiptychRow.astro';
+import type { CollectionEntry } from 'astro:content';
+
+/* ============================================================================
+ * Beat 5 — METASTATE. The pivot, and the only beat whose beam holds still.
+ *
+ * Everywhere else the seam travels: it is pushed wide by the cost, then walks
+ * back as the argument is won. Here it is locked dead centre at maximum
+ * intensity, and the product name is set ACROSS it — META on paper, STATE on
+ * navy, the beam cutting between them. The deck's fractured bridge is two
+ * halves and a gap; the deck's next slide is the same two halves rejoined by a
+ * beam of light. This is that slide, and the thing spanning the fracture is the
+ * product.
+ *
+ * `wipe={false}` is load-bearing, not an optimisation: a moving seam would tear
+ * the word apart.
+ * ========================================================================== */
+
+export interface Props {
+  beat: CollectionEntry<'beats'>;
+  body?: any;
+}
+const { beat, body: Body } = Astro.props;
+const d = beat.data as any;
+const steps: any[] = d.items ?? [];
+
+/** Break the title so its two halves meet at the seam. */
+function span(title: string): [string, string] {
+  const t = (title ?? '').trim();
+  if (t.includes(' ')) {
+    const words = t.split(' ');
+    const mid = Math.ceil(words.length / 2);
+    return [words.slice(0, mid).join(' '), words.slice(mid).join(' ')];
+  }
+  const cut = Math.floor(t.length / 2);
+  return [t.slice(0, cut), t.slice(cut)];
+}
+const [wordPast, wordFuture] = span(d.title);
+---
+
+<DiptychSection id={d.slug_id} split={50} size="tall" wipe={false} intensity="high">
+  <DiptychRow seam={false} gap="lg" align="end">
+    <div class="ms-past" slot="past">
+      <p class="dx-eyebrow on-past">{d.eyebrow}</p>
+      <h2 class="ms-word">
+        {wordPast}<span class="ms-tail">{wordFuture}</span>
+      </h2>
+    </div>
+    <div class="ms-future dp-blank" slot="future">
+      <p class="ms-word ms-word-future" aria-hidden="true">{wordFuture}</p>
+    </div>
+  </DiptychRow>
+
+  <DiptychRow gap="none" rule={true} align="start">
+    <div slot="past">
+      <p class="dx-lede on-past ms-kicker">{d.kicker}</p>
+    </div>
+    <div slot="future">
+      <h3 class="dx-h3 ms-sub">{d.sub}</h3>
+      <ol class="ms-steps">
+        {
+          steps.map((s) => (
+            <li class="ms-step">
+              <span class="ms-index">{s.note}</span>
+              <div class="ms-step-text">
+                <p class="dx-eyebrow on-future">{s.label}</p>
+                <p class="dx-prose on-future">{s.body}</p>
+              </div>
+            </li>
+          ))
+        }
+      </ol>
+      {
+        Body && (
+          <div class="dx-prose on-future ms-coda">
+            <Body />
+          </div>
+        )
+      }
+    </div>
+  </DiptychRow>
+</DiptychSection>
+
+<style>
+  .ms-past {
+    text-align: right;
+  }
+  .ms-word {
+    font-family: var(--font-display);
+    font-optical-sizing: none;
+    font-variation-settings: 'opsz' 144, 'wght' 500;
+    font-size: clamp(2.75rem, 7.6vw, 7rem);
+    line-height: 0.92;
+    letter-spacing: 0.01em;
+    margin: 0.6rem 0 0;
+    color: var(--color-past-text);
+  }
+  .ms-word-future {
+    color: var(--color-gain);
+  }
+  .ms-kicker {
+    max-width: 34ch;
+    margin-left: auto;
+    text-align: right;
+  }
+  .ms-sub {
+    color: var(--color-future-text);
+    max-width: 26ch;
+  }
+  .ms-steps {
+    list-style: none;
+    margin: 2rem 0 0;
+    padding: 0;
+    display: grid;
+    gap: 1.5rem;
+  }
+  .ms-step {
+    display: grid;
+    grid-template-columns: 3.25rem minmax(0, 1fr);
+    align-items: start;
+  }
+  .ms-index {
+    font-family: var(--font-data);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: var(--color-gain);
+    border-top: 2px solid var(--color-gain);
+    padding-top: 0.45rem;
+    margin-top: 0.15rem;
+    width: 2.25rem;
+  }
+  .ms-step-text > * + * {
+    margin-top: 0.4rem;
+  }
+  .ms-coda {
+    margin-top: 2rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--color-future-hairline);
+  }
+  /* Desktop: the second half of the word lives across the beam, so it is
+   * hidden here but still read aloud as part of the heading. Narrow: the beam
+   * is a horizontal seam and the word has to be whole again. */
+  .ms-tail {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  @media (max-width: 899px) {
+    .ms-past,
+    .ms-kicker {
+      text-align: left;
+      margin-left: 0;
+    }
+    .ms-tail {
+      position: static;
+      width: auto;
+      height: auto;
+      overflow: visible;
+      clip-path: none;
+    }
+  }
+</style>

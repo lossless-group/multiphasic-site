@@ -1,0 +1,125 @@
+---
+/* SubtractionList — beat 6. Four hedges removed.
+ *
+ * Typographically the repeated word "Less" is the quiet part and the noun is
+ * the loud part, so they are set differently: "Less" small in the data face,
+ * the noun large in display. The rule on each row draws itself OUT from the
+ * right rather than in — the only place on the page where the motion runs
+ * backwards, because the beat is about removal. That is the whole effect.
+ *
+ * No coral on this screen. There is no number here to spend it on. */
+import type { CollectionEntry } from 'astro:content';
+import SectionHeader from './SectionHeader.astro';
+
+export interface Props { beat: CollectionEntry<'beats'> }
+const { beat } = Astro.props;
+const d = beat.data as any;
+const items: { label: string; body?: string }[] = d.items ?? [];
+
+const split = (label: string) => {
+  const m = label.match(/^(Less)\s+(.*)$/i);
+  return m ? { prefix: m[1], rest: m[2] } : { prefix: '', rest: label };
+};
+---
+
+<section class="sub" id={d.slug_id}>
+  <SectionHeader index={d.order} eyebrow={d.eyebrow} />
+
+  <h2 class="beat-title">{d.title}</h2>
+  {d.sub && <p class="beat-sub">{d.sub}</p>}
+
+  <ul class="sub-list" role="list">
+    {items.map((it, i) => {
+      const { prefix, rest } = split(it.label);
+      return (
+        <li class="sub-row" style={`--sub-delay:${i * 130}ms`}>
+          <span class="sub-minus" aria-hidden="true">&#8722;</span>
+          <h3 class="sub-label">
+            {prefix && <span class="sub-prefix">{prefix}</span>}
+            <span class="sub-noun">{rest}</span>
+          </h3>
+          <p class="sub-body">{it.body}</p>
+          <span class="sub-rule" data-reveal></span>
+        </li>
+      );
+    })}
+  </ul>
+
+  <div class="beat-note"><slot /></div>
+</section>
+
+<style>
+  .sub-list {
+    list-style: none;
+    padding: 0;
+    margin: clamp(2rem, 4vw, 3rem) 0 0;
+    border-top: 1px solid var(--color-rule);
+  }
+  .sub-row {
+    position: relative;
+    display: grid;
+    grid-template-columns: 2.5rem minmax(0, 22rem) minmax(0, 1fr);
+    gap: 1.5rem;
+    align-items: baseline;
+    padding: clamp(1.5rem, 3.2vw, 2.25rem) 0;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .sub-minus {
+    font-family: var(--font-data);
+    font-size: 1.1rem;
+    color: var(--color-primary);
+    line-height: 1;
+  }
+  .sub-label {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0 0.7ch;
+    margin: 0;
+    min-width: 0;
+  }
+  .sub-prefix {
+    font-family: var(--font-data);
+    font-size: 0.72rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--color-text-faint);
+  }
+  .sub-noun {
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: clamp(1.35rem, 3.4vw, 2.1rem);
+    letter-spacing: -0.025em;
+    line-height: 1.05;
+  }
+  .sub-body {
+    color: var(--color-text-muted);
+    font-size: 0.95rem;
+    line-height: 1.62;
+    max-width: 46ch;
+  }
+
+  /* The rule runs off to the right instead of drawing in. Subtractive. */
+  .sub-rule {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -1px;
+    height: 1px;
+    background: var(--color-primary);
+    transform-origin: right center;
+  }
+  :global(html.has-reveal) .sub-rule { transform: scaleX(1); }
+  :global(html.has-reveal) .sub-rule.is-in {
+    transform: scaleX(0);
+    transition: transform 1100ms cubic-bezier(0.6, 0, 0.2, 1) var(--sub-delay);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    :global(html.has-reveal) .sub-rule { transform: scaleX(0); }
+  }
+
+  @media (max-width: 860px) {
+    .sub-row { grid-template-columns: 2rem minmax(0, 1fr); row-gap: 0.85rem; }
+    .sub-body { grid-column: 2; }
+  }
+</style>

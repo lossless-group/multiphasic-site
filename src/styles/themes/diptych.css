@@ -1,0 +1,220 @@
+/* ============================================================================
+ * TIER 2 — semantic tokens for the "diptych" variant: Direction C, Before the Beam.
+ *
+ * THE ARGUMENT THIS PALETTE ENCODES
+ * --------------------------------------------------------------------------
+ * Every beat is two columns with a beam of light between them.
+ *   LEFT  = inherited. What the thermal history left behind. Costs live here.
+ *   RIGHT = specified. What Multiphasic makes it possible to ask for. Gains live here.
+ *
+ * Two laws, enforced by these tokens and by every component that reads them:
+ *   1. `--color-cost` (coral family)  may ONLY appear left of the beam.
+ *   2. `--color-gain` (cyan family)   may ONLY appear right of the beam.
+ * A stray coral on the right destroys the reader's ability to read the page
+ * at a glance, which is the entire point of the direction.
+ *
+ * THE MODE PROBLEM, AND HOW IT IS SOLVED
+ * --------------------------------------------------------------------------
+ * Light mode gets the opposition for free: paper vs. navy is an enormous
+ * luminance delta. In dark and vibrant modes both halves want to go dark and
+ * the diptych collapses into two identical columns. So the opposition is
+ * re-founded on a rule that survives every mode:
+ *
+ *   THE PAST HALF *IS* THE PAGE GROUND. THE FUTURE HALF DEPARTS FROM IT.
+ *
+ *   light   — ground is warm paper; the future is an inserted DARK navy panel.
+ *   dark    — ground is a warm, matte, hatched charcoal (metal as-cast, texture
+ *             unresolved); the future is a cool, smooth, LIT navy panel. The
+ *             luminance relationship inverts vs. light mode, deliberately: the
+ *             future is always the half that is not the page.
+ *   vibrant — ground is a magenta-black; the future is a violet-lit navy and
+ *             the beam becomes the actual ultrafast laser sheet from slide 3.
+ *
+ * Supporting the luminance move: temperature (past warm / future cool) and
+ * texture (`--fx-past-texture` is a fine diagonal hatch in the dark modes and
+ * nothing in light). Past prose also runs at slightly lower contrast than
+ * future prose — inheritance reads as haze, specification reads as crisp.
+ *
+ * kebab-case only. `__` named tokens live in global.css and are referenced
+ * from this file and nowhere else.
+ * ========================================================================== */
+
+[data-theme="diptych"] {
+  /* Editorial voice. Fraunces carries the argument (variable optical-size axis
+   * is used explicitly: opsz 144 at display sizes for maximum stroke contrast,
+   * opsz 9 at caption sizes so the small serif stays sturdy). Inter is the
+   * humanist body. JetBrains Mono is the data face — every number, unit,
+   * magnitude and label. Numbers are never set in the body face. */
+  --font-display: var(--font__fraunces);
+  --font-body: var(--font__inter);
+  --font-data: var(--font__jetbrains-mono);
+  --font-eyebrow: var(--font__jetbrains-mono);
+
+  /* Geometry shared by every diptych. Mode-invariant. */
+  --fx-beam-box: 110px;          /* hit/paint box the seam is drawn inside */
+  --fx-drift-duration: 14s;      /* the beam's living vertical drift */
+  --dp-gutter: clamp(1.15rem, 3vw, 3.25rem);
+  --dp-edge: clamp(1.15rem, 4.2vw, 4.5rem);
+}
+
+/* ---------------------------------------------------------------------------
+ * LIGHT — the primary mode for this direction. Warm paper, deep navy, and a
+ * seam of daylight-white between them.
+ * ------------------------------------------------------------------------- */
+[data-theme="diptych"][data-mode="light"] {
+  --color-background: var(--color__paper);
+  --color-surface: var(--color__bone);
+  --color-surface-raised: var(--color__white);
+  --color-text: var(--color__navy-abyss);
+  --color-text-muted: var(--color__steel-700);
+  --color-text-faint: var(--color__ash);
+  --color-primary: var(--color__navy-deep);
+  --color-accent: var(--color__coral-strike);
+  --color-border: color-mix(in srgb, var(--color__navy-abyss) 15%, transparent);
+
+  /* — the past half (left of the beam) — */
+  --color-past-bg: var(--color__paper);
+  --color-past-surface: var(--color__bone);
+  --color-past-text: var(--color__graphite);
+  --color-past-text-muted: color-mix(in srgb, var(--color__graphite) 66%, var(--color__paper));
+  --color-past-rule: color-mix(in srgb, var(--color__coral-strike) 34%, transparent);
+  --color-past-hairline: color-mix(in srgb, var(--color__graphite) 16%, transparent);
+
+  /* — the future half (right of the beam) — */
+  --color-future-bg: var(--color__navy-deep);
+  --color-future-surface: var(--color__navy-slate);
+  --color-future-text: var(--color__steel-100);
+  --color-future-text-muted: var(--color__steel-400);
+  --color-future-rule: color-mix(in srgb, var(--color__cyan-signal) 46%, transparent);
+  --color-future-hairline: color-mix(in srgb, var(--color__steel-100) 17%, transparent);
+  --color-future-sheen: color-mix(in srgb, var(--color__cyan-signal) 7%, transparent);
+
+  /* — the two inks. cost is left-only, gain is right-only — */
+  --color-cost: var(--color__coral-strike);
+  --color-cost-ink: color-mix(in srgb, var(--color__coral-strike) 68%, var(--color__navy-abyss));
+  --color-cost-soft: color-mix(in srgb, var(--color__coral-strike) 16%, transparent);
+  --color-gain: var(--color__cyan-signal);
+  --color-gain-ink: var(--color__cyan-ice);
+  --color-gain-soft: color-mix(in srgb, var(--color__cyan-signal) 20%, transparent);
+
+  /* — the seam — */
+  --color-beam-core: var(--color__white);
+  --color-beam-bloom: var(--color__cyan-ice);
+  --color-beam-halo: color-mix(in srgb, var(--color__beam-white) 70%, transparent);
+
+  --fx-glow-opacity: 0.10;
+  --fx-beam-opacity: 0.92;
+  --fx-past-texture: none;
+  --fx-past-texture-opacity: 0;
+}
+
+/* ---------------------------------------------------------------------------
+ * DARK — the hard one. Warm, matte, hatched past; cool, smooth, lit future.
+ * The luminance relationship of light mode is inverted on purpose.
+ * ------------------------------------------------------------------------- */
+[data-theme="diptych"][data-mode="dark"] {
+  /* warm charcoal: graphite pulled down to near-black, then bent toward coral */
+  --color-background: color-mix(
+    in srgb,
+    color-mix(in srgb, var(--color__graphite) 56%, var(--color__black)) 93%,
+    var(--color__coral-strike)
+  );
+  --color-surface: color-mix(in srgb, var(--color-background) 88%, var(--color__bone));
+  --color-surface-raised: var(--color__navy-slate);
+  --color-text: color-mix(in srgb, var(--color__bone) 88%, var(--color__coral-ember));
+  --color-text-muted: color-mix(in srgb, var(--color__ash) 72%, var(--color-background));
+  --color-text-faint: color-mix(in srgb, var(--color__ash) 40%, var(--color-background));
+  --color-primary: var(--color__cyan-signal);
+  --color-accent: var(--color__coral-ember);
+  --color-border: color-mix(in srgb, var(--color__bone) 18%, transparent);
+
+  /* past = the page ground itself, warm and hatched */
+  --color-past-bg: var(--color-background);
+  --color-past-surface: color-mix(in srgb, var(--color-background) 84%, var(--color__bone));
+  --color-past-text: color-mix(in srgb, var(--color__bone) 84%, var(--color__coral-ember));
+  --color-past-text-muted: color-mix(in srgb, var(--color__ash) 72%, var(--color-background));
+  --color-past-rule: color-mix(in srgb, var(--color__coral-ember) 42%, transparent);
+  --color-past-hairline: color-mix(in srgb, var(--color__bone) 15%, transparent);
+
+  /* future = a cool navy panel, LIT — brighter than the ground it sits in */
+  --color-future-bg: color-mix(in srgb, var(--color__navy-haze) 78%, var(--color__navy-slate));
+  --color-future-surface: var(--color__navy-haze);
+  --color-future-text: var(--color__white);
+  --color-future-text-muted: color-mix(in srgb, var(--color__steel-100) 66%, var(--color__navy-slate));
+  --color-future-rule: color-mix(in srgb, var(--color__cyan-ice) 60%, transparent);
+  --color-future-hairline: color-mix(in srgb, var(--color__steel-100) 22%, transparent);
+  --color-future-sheen: color-mix(in srgb, var(--color__cyan-ice) 10%, transparent);
+
+  --color-cost: var(--color__coral-ember);
+  --color-cost-ink: var(--color__coral-ember);
+  --color-cost-soft: color-mix(in srgb, var(--color__coral-ember) 22%, transparent);
+  --color-gain: var(--color__cyan-ice);
+  --color-gain-ink: var(--color__cyan-ice);
+  --color-gain-soft: color-mix(in srgb, var(--color__cyan-ice) 26%, transparent);
+
+  --color-beam-core: var(--color__white);
+  --color-beam-bloom: var(--color__beam-white);
+  --color-beam-halo: color-mix(in srgb, var(--color__cyan-signal) 62%, transparent);
+
+  --fx-glow-opacity: 0.30;
+  --fx-beam-opacity: 1;
+  /* the past half carries visible grain: material as-cast, state unresolved */
+  --fx-past-texture: repeating-linear-gradient(
+    128deg,
+    color-mix(in srgb, var(--color__bone) 6%, transparent) 0 1px,
+    transparent 1px 7px
+  );
+  --fx-past-texture-opacity: 1;
+}
+
+/* ---------------------------------------------------------------------------
+ * VIBRANT — DARK-BASED. Sets background/surface/text/border explicitly.
+ * Here the seam stops being daylight and becomes the ultrafast laser sheet:
+ * white core, violet bloom, magenta halo.
+ * ------------------------------------------------------------------------- */
+[data-theme="diptych"][data-mode="vibrant"] {
+  --color-background: color-mix(in srgb, var(--color__plum-void) 90%, var(--color__magenta-excite));
+  --color-surface: var(--color__plum-shadow);
+  --color-surface-raised: color-mix(in srgb, var(--color__violet-deep) 26%, var(--color__plum-void));
+  --color-text: var(--color__white);
+  --color-text-muted: color-mix(in srgb, var(--color__cyan-ice) 72%, var(--color__plum-shadow));
+  --color-text-faint: color-mix(in srgb, var(--color__violet-pulse) 62%, transparent);
+  --color-primary: var(--color__violet-pulse);
+  --color-accent: var(--color__magenta-excite);
+  --color-border: color-mix(in srgb, var(--color__violet-pulse) 45%, transparent);
+
+  --color-past-bg: var(--color-background);
+  --color-past-surface: color-mix(in srgb, var(--color__plum-shadow) 80%, var(--color__magenta-excite));
+  --color-past-text: color-mix(in srgb, var(--color__white) 84%, var(--color__magenta-excite));
+  --color-past-text-muted: color-mix(in srgb, var(--color__white) 52%, var(--color-background));
+  --color-past-rule: color-mix(in srgb, var(--color__magenta-excite) 55%, transparent);
+  --color-past-hairline: color-mix(in srgb, var(--color__magenta-excite) 24%, transparent);
+
+  --color-future-bg: color-mix(in srgb, var(--color__navy-deep) 58%, var(--color__violet-deep));
+  --color-future-surface: color-mix(in srgb, var(--color__navy-haze) 62%, var(--color__violet-pulse));
+  --color-future-text: var(--color__white);
+  --color-future-text-muted: var(--color__cyan-ice);
+  --color-future-rule: color-mix(in srgb, var(--color__cyan-ice) 70%, transparent);
+  --color-future-hairline: color-mix(in srgb, var(--color__violet-pulse) 46%, transparent);
+  --color-future-sheen: color-mix(in srgb, var(--color__violet-pulse) 22%, transparent);
+
+  --color-cost: var(--color__magenta-excite);
+  --color-cost-ink: var(--color__magenta-excite);
+  --color-cost-soft: color-mix(in srgb, var(--color__magenta-excite) 26%, transparent);
+  --color-gain: var(--color__cyan-ice);
+  --color-gain-ink: var(--color__cyan-ice);
+  --color-gain-soft: color-mix(in srgb, var(--color__cyan-ice) 30%, transparent);
+
+  --color-beam-core: var(--color__white);
+  --color-beam-bloom: var(--color__violet-pulse);
+  --color-beam-halo: color-mix(in srgb, var(--color__magenta-excite) 72%, transparent);
+
+  --fx-glow-opacity: 0.62;
+  --fx-beam-opacity: 1;
+  --fx-past-texture: repeating-linear-gradient(
+    128deg,
+    color-mix(in srgb, var(--color__magenta-excite) 14%, transparent) 0 1px,
+    transparent 1px 7px
+  );
+  --fx-past-texture-opacity: 1;
+}

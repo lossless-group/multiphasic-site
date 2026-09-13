@@ -1,0 +1,129 @@
+---
+import DiptychSection from './DiptychSection.astro';
+import DiptychRow from './DiptychRow.astro';
+import OverdesignMass from '../flare/OverdesignMass.astro';
+import type { CollectionEntry } from 'astro:content';
+
+/* ============================================================================
+ * Beat 6 — The result. Beat 3, run backwards.
+ *
+ * Same four rows, same order, same seam positions — but now the left half
+ * carries beat 3's figure struck through and the right half carries the
+ * subtraction that cancels it. The reader has seen these four rows before, 40%
+ * of a page ago, and recognises them. That recognition is the argument: nothing
+ * is added, something is removed.
+ *
+ * The over-design row is where OverdesignMass lands, because "up to 2× the
+ * material and weight" is the one cost that can be drawn as a part rather than
+ * described. On the left the section carries its hedge and sheds it; on the
+ * right the same section stands at its true thickness in the gain colour.
+ * ========================================================================== */
+
+export interface Props {
+  beat: CollectionEntry<'beats'>;
+  /** Beat 3's stats, in order. Each row's cost is carried forward to be cancelled. */
+  costs?: any[];
+  body?: any;
+}
+const { beat, costs = [], body: Body } = Astro.props;
+const d = beat.data as any;
+const items: any[] = d.items ?? [];
+
+/** Which row gets the part drawing. Matched on the cost's own label. */
+const massRow = costs.findIndex((c) => /OVERDESIGN/i.test(c?.label ?? ''));
+---
+
+<DiptychSection id={d.slug_id} split={34} size="tall">
+  <DiptychRow seam={false} gap="lg" align="end">
+    <div class="res-head" slot="past">
+      <p class="dx-eyebrow on-past">{d.eyebrow}</p>
+      <hr class="dx-rule on-past" />
+    </div>
+    <div slot="future">
+      <h2 class="dx-h2">{d.title}</h2>
+      <p class="dx-lede on-future res-sub">{d.sub}</p>
+    </div>
+  </DiptychRow>
+
+  {
+    items.map((it, i) => (
+      <DiptychRow seam={i === 0} gap="md" rule={true} align="center">
+        <div class="res-cost" slot="past">
+          {costs[i] && (
+            <>
+              <p class="dx-eyebrow on-past">{costs[i].label}</p>
+              <span class="dx-num on-past is-struck">{costs[i].value}</span>
+            </>
+          )}
+          {i === massRow && (
+            <OverdesignMass state="morph" profile="i-beam" ratio={2} size={150} tone="cost" class="res-mass" />
+          )}
+        </div>
+        <div class="res-gain" slot="future">
+          <h3 class="dx-h3">{it.label}</h3>
+          <p class="dx-prose on-future">{it.body}</p>
+          {i === massRow && (
+            <OverdesignMass state="specified" profile="i-beam" ratio={2} size={110} tone="gain" label={false} class="res-mass-after" />
+          )}
+        </div>
+      </DiptychRow>
+    ))
+  }
+
+  {
+    Body && (
+      <DiptychRow seam={false} gap="none" align="start">
+        <div class="dp-blank" slot="past" />
+        <div slot="future">
+          <div class="dx-prose on-future res-coda">
+            <Body />
+          </div>
+        </div>
+      </DiptychRow>
+    )
+  }
+</DiptychSection>
+
+<style>
+  .res-head {
+    text-align: right;
+  }
+  .res-head .dx-rule {
+    margin-left: auto;
+  }
+  .res-sub {
+    margin-top: 1.1rem;
+  }
+  .res-cost {
+    text-align: right;
+  }
+  .res-cost .dx-num {
+    margin-top: 0.6rem;
+  }
+  .res-mass {
+    margin-left: auto;
+    margin-top: 1.25rem;
+  }
+  .res-gain > * + * {
+    margin-top: 0.7rem;
+  }
+  .res-mass-after {
+    margin-top: 1.25rem;
+  }
+  .res-coda {
+    margin-top: 1.75rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--color-future-hairline);
+  }
+
+  @media (max-width: 899px) {
+    .res-head,
+    .res-cost {
+      text-align: left;
+    }
+    .res-head .dx-rule,
+    .res-mass {
+      margin-left: 0;
+    }
+  }
+</style>

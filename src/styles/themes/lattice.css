@@ -1,0 +1,130 @@
+/* ============================================================================
+ * TIER 2 — semantic tokens for the "lattice" variant (Direction B).
+ *
+ * The premise: the page IS the material. Ground is near-black with a violet
+ * undertone so the METASTATE emission (violet -> magenta) can actually glow.
+ * Navy is demoted from ground to a supporting surface color.
+ *
+ * LIGHT MODE INVERTS THE METAPHOR rather than washing the dark one out.
+ * In dark/vibrant, order reads as *light*: the annealed lattice is brighter,
+ * the excitation front glows, blend mode is additive. In light mode, order
+ * reads as *ink*: the annealed lattice is darker and crisper, the disordered
+ * region is a faint scratchy ghost, the front is a saturated ink band, and the
+ * canvas blends multiply. Same argument, opposite sign.
+ *
+ * kebab-case only. `__` named tokens live in global.css Tier 1 and are read
+ * ONLY from this file — never from a component.
+ * ========================================================================== */
+
+[data-theme="lattice"] {
+  /* Type is mode-invariant. Space Grotesk carries the wordmark's wide geometric
+   * proportions; here it runs oversized, weight 700, tracking pulled tight.
+   * Inter is deliberately small and quiet — the page breathes in extremes. */
+  --font-display: var(--font__space-grotesk);
+  --font-body: var(--font__inter);
+  --font-data: var(--font__jetbrains-mono);
+  --font-eyebrow: var(--font__jetbrains-mono);
+}
+
+/* ---------------------------------------------------------------------------
+ * DARK — the default. Plum void ground, near-white display type, violet
+ * reserved for excitation, cyan as the "after / conditioned" state color.
+ * ------------------------------------------------------------------------- */
+[data-theme="lattice"][data-mode="dark"] {
+  --color-background: var(--color__plum-void);
+  --color-surface: var(--color__navy-abyss);
+  --color-surface-raised: var(--color__plum-shadow);
+  --color-text: var(--color__white);
+  --color-text-muted: color-mix(in srgb, var(--color__white) 56%, var(--color__plum-void));
+  --color-text-faint: color-mix(in srgb, var(--color__white) 46%, var(--color__plum-void));
+  --color-primary: var(--color__violet-pulse);
+  --color-accent: var(--color__magenta-excite);
+  --color-conditioned: var(--color__cyan-ice);
+  --color-border: color-mix(in srgb, var(--color__white) 13%, transparent);
+
+  --fx-glow-opacity: 0.34;
+  --fx-excite-gradient: linear-gradient(96deg, #7B5CFF 0%, #FF3DCB 100%);
+  --fx-excite-glow: 0 0 70px rgba(123, 92, 255, 0.32);
+  --fx-veil: radial-gradient(130% 78% at 50% -10%, rgba(74, 47, 214, 0.20) 0%, rgba(8, 6, 14, 0) 68%);
+  --fx-hairline: rgba(255, 255, 255, 0.13);
+  --fx-band: rgba(6, 27, 44, 0.42);
+
+  /* Canvas-consumed. Literal rgba only — canvas color parsing is unforgiving. */
+  --fx-lattice-blend: screen;
+  --fx-lattice-alpha: 0.92;
+  --fx-lattice-bond: rgba(126, 116, 168, 0.30);
+  --fx-lattice-bond-ordered: rgba(150, 214, 255, 0.46);
+  --fx-lattice-node: rgba(168, 158, 208, 0.55);
+  --fx-lattice-node-ordered: rgba(191, 239, 255, 0.95);
+  --fx-lattice-front: rgba(255, 61, 203, 0.55);
+  --fx-lattice-front-2: rgba(123, 92, 255, 0.30);
+}
+
+/* ---------------------------------------------------------------------------
+ * VIBRANT — DARK-BASED. The lattice is fully excited. Ground drops to true
+ * black so the emission can push to its maximum without graying out.
+ * ------------------------------------------------------------------------- */
+[data-theme="lattice"][data-mode="vibrant"] {
+  --color-background: var(--color__black);
+  --color-surface: var(--color__plum-void);
+  --color-surface-raised: color-mix(in srgb, var(--color__violet-deep) 26%, var(--color__plum-void));
+  --color-text: var(--color__white);
+  --color-text-muted: var(--color__cyan-ice);
+  --color-text-faint: color-mix(in srgb, var(--color__violet-pulse) 62%, transparent);
+  --color-primary: var(--color__magenta-excite);
+  --color-accent: var(--color__violet-pulse);
+  --color-conditioned: var(--color__cyan-signal);
+  --color-border: color-mix(in srgb, var(--color__violet-pulse) 40%, transparent);
+
+  --fx-glow-opacity: 0.82;
+  --fx-excite-gradient: linear-gradient(96deg, #7B5CFF 0%, #FF3DCB 54%, #29B6E8 100%);
+  --fx-excite-glow: 0 0 96px rgba(255, 61, 203, 0.48);
+  --fx-veil: radial-gradient(130% 80% at 50% -10%, rgba(123, 92, 255, 0.34) 0%, rgba(0, 0, 0, 0) 66%);
+  --fx-hairline: rgba(123, 92, 255, 0.34);
+  --fx-band: rgba(20, 16, 31, 0.62);
+
+  --fx-lattice-blend: screen;
+  --fx-lattice-alpha: 1;
+  --fx-lattice-bond: rgba(123, 92, 255, 0.34);
+  --fx-lattice-bond-ordered: rgba(41, 182, 232, 0.66);
+  --fx-lattice-node: rgba(255, 61, 203, 0.50);
+  --fx-lattice-node-ordered: rgba(255, 255, 255, 1);
+  --fx-lattice-front: rgba(255, 61, 203, 0.85);
+  --fx-lattice-front-2: rgba(123, 92, 255, 0.52);
+}
+
+/* ---------------------------------------------------------------------------
+ * LIGHT — the inversion. Cool clinical white (not warm paper; that's Direction
+ * C's ground). Ink is plum-void, so the same violet undertone survives at the
+ * opposite end of the scale. Glow goes to zero and pigment does the work:
+ * the excitation gradient becomes a saturated ink gradient, the lattice
+ * becomes dark hairlines that DARKEN as they anneal.
+ * ------------------------------------------------------------------------- */
+[data-theme="lattice"][data-mode="light"] {
+  --color-background: var(--color__white);
+  --color-surface: var(--color__steel-100);
+  --color-surface-raised: var(--color__white);
+  --color-text: var(--color__plum-void);
+  --color-text-muted: color-mix(in srgb, var(--color__plum-void) 60%, var(--color__white));
+  --color-text-faint: color-mix(in srgb, var(--color__plum-void) 48%, var(--color__white));
+  --color-primary: var(--color__violet-deep);
+  --color-accent: color-mix(in srgb, var(--color__magenta-excite) 74%, var(--color__plum-void));
+  --color-conditioned: color-mix(in srgb, var(--color__cyan-signal) 78%, var(--color__navy-abyss));
+  --color-border: color-mix(in srgb, var(--color__plum-void) 17%, transparent);
+
+  --fx-glow-opacity: 0;
+  --fx-excite-gradient: linear-gradient(96deg, #4A2FD6 0%, #C0129B 100%);
+  --fx-excite-glow: none;
+  --fx-veil: linear-gradient(180deg, rgba(74, 47, 214, 0.045) 0%, rgba(255, 255, 255, 0) 42%);
+  --fx-hairline: rgba(8, 6, 14, 0.16);
+  --fx-band: rgba(230, 237, 243, 0.72);
+
+  --fx-lattice-blend: multiply;
+  --fx-lattice-alpha: 1;
+  --fx-lattice-bond: rgba(8, 6, 14, 0.10);
+  --fx-lattice-bond-ordered: rgba(74, 47, 214, 0.34);
+  --fx-lattice-node: rgba(8, 6, 14, 0.18);
+  --fx-lattice-node-ordered: rgba(38, 22, 120, 0.80);
+  --fx-lattice-front: rgba(192, 18, 155, 0.42);
+  --fx-lattice-front-2: rgba(74, 47, 214, 0.26);
+}

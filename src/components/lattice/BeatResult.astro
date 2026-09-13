@@ -1,0 +1,67 @@
+---
+// Beat 6 — The result. The four subtractions.
+//
+// Each label already ends in a full stop in the content ("Less scrap."), so
+// they are set as statements at display scale with the explanation demoted to
+// a quiet line alongside. The product is less; the layout should be too.
+
+export interface Props {
+  data: Record<string, any>;
+  closing?: string;
+}
+const { data, closing } = Astro.props;
+const items: Array<Record<string, string>> = data.items ?? [];
+---
+
+<h2 class="lx-display-l lx-rise" id="beat-the-result">{data.title}</h2>
+
+<ul class="result-list">
+  {items.map((it) => (
+    <li class="result-row lx-rise">
+      <span class="result-label">{it.label}</span>
+      {it.body && <p class="lx-body">{it.body}</p>}
+    </li>
+  ))}
+</ul>
+
+{closing && <p class="result-closing lx-rise">{closing}</p>}
+
+<style>
+  .result-list {
+    list-style: none;
+    margin: clamp(3rem, 7vw, 5rem) 0 0;
+    padding: 0;
+  }
+  .result-row {
+    display: grid;
+    gap: 0.6rem 3rem;
+    align-items: baseline;
+    padding: clamp(1.5rem, 3.5vw, 2.25rem) 0;
+    border-top: 1px solid var(--fx-hairline);
+  }
+  .result-row:last-child { border-bottom: 1px solid var(--fx-hairline); }
+  @media (min-width: 52rem) {
+    .result-row { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); }
+  }
+
+  .result-label {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: clamp(1.65rem, 4.4vw, 3.1rem);
+    line-height: 1;
+    letter-spacing: -0.035em;
+    color: var(--color-text);
+  }
+  .result-row :global(.lx-body) { max-width: 40ch; }
+
+  .result-closing {
+    margin-top: clamp(2.5rem, 6vw, 4rem);
+    max-width: 34ch;
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: clamp(1.05rem, 2.2vw, 1.5rem);
+    line-height: 1.3;
+    letter-spacing: -0.02em;
+    color: var(--color-conditioned);
+  }
+</style>

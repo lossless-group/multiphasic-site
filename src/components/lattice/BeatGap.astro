@@ -1,0 +1,58 @@
+---
+// Beat 2 — The gap.
+//
+// Two columns, but not a comparison table: a controlled variable and an
+// uncontrolled one. The left column is labelled in the conditioned colour
+// (settled, known); the right in the accent (open, hot). `sub` and the body
+// are omitted — the two blocks say it in forty words.
+
+export interface Props {
+  data: Record<string, any>;
+}
+const { data } = Astro.props;
+---
+
+<h2 class="lx-display-l lx-rise" id="beat-the-gap">{data.title}</h2>
+
+<div class="gap-pair">
+  {data.left && (
+    <div class="gap-col is-known lx-rise">
+      <span class="gap-label">{data.left.title}</span>
+      <p class="lx-body">{data.left.body}</p>
+    </div>
+  )}
+  {data.right && (
+    <div class="gap-col is-open lx-rise">
+      <span class="gap-label">{data.right.title}</span>
+      <p class="lx-body">{data.right.body}</p>
+    </div>
+  )}
+</div>
+
+<style>
+  .gap-pair {
+    display: grid;
+    gap: clamp(2rem, 5vw, 4rem);
+    margin-top: clamp(3rem, 8vw, 6rem);
+  }
+  @media (min-width: 52rem) {
+    .gap-pair { grid-template-columns: 1fr 1fr; }
+  }
+  .gap-col {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+    padding-top: 1.1rem;
+    border-top: 1px solid var(--fx-hairline);
+    max-width: 42ch;
+  }
+  .gap-col.is-open { border-top-color: var(--color-accent); }
+  .gap-label {
+    font-family: var(--font-data);
+    font-size: 0.6875rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--color-conditioned);
+  }
+  .gap-col.is-open .gap-label { color: var(--color-accent); }
+</style>

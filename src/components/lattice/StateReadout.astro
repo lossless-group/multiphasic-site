@@ -1,0 +1,99 @@
+---
+// StateReadout — the page's structural device, in place of section numbering.
+//
+// Numbered eyebrows (01 / 02 / 03) would say only "this is the third thing".
+// The argument here is a state transition, so the chrome reports state: the
+// material is INHERITED at the top of the page, EXCITED through the mechanism,
+// and SPECIFIED by the vision. It reads the same scroll progress that drives
+// the lattice front, so the word and the wavefront always agree.
+---
+
+<div class="lx-readout" data-state-readout role="status" aria-live="polite">
+  <span class="lx-readout-key">STATE</span>
+  <span class="lx-readout-value" data-state-value>INHERITED</span>
+  <span class="lx-readout-track" aria-hidden="true">
+    <span class="lx-readout-fill" data-state-fill></span>
+  </span>
+</div>
+
+<style>
+  .lx-readout {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    font-family: var(--font-data);
+    font-size: 0.625rem;
+    letter-spacing: 0.2em;
+    white-space: nowrap;
+  }
+  .lx-readout-key {
+    color: var(--color-text-faint);
+  }
+  .lx-readout-value {
+    color: var(--color-text-muted);
+    transition: color 400ms ease;
+  }
+  .lx-readout[data-phase='excited'] .lx-readout-value { color: var(--color-accent); }
+  .lx-readout[data-phase='specified'] .lx-readout-value { color: var(--color-conditioned); }
+
+  .lx-readout-track {
+    position: relative;
+    display: block;
+    width: 4.5rem;
+    height: 1px;
+    background: var(--fx-hairline);
+  }
+  .lx-readout-fill {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 0%;
+    background: var(--color-primary);
+  }
+  .lx-readout[data-phase='specified'] .lx-readout-fill { background: var(--color-conditioned); }
+
+  /* Below the fold of a phone's chrome the key and track are noise; the word
+     is the payload, so it is the thing that survives. */
+  @media (max-width: 34rem) {
+    .lx-readout-key,
+    .lx-readout-track { display: none; }
+  }
+</style>
+
+<script>
+  const el = document.querySelector<HTMLElement>('[data-state-readout]');
+  if (el) {
+    const valueEl = el.querySelector<HTMLElement>('[data-state-value]')!;
+    const fillEl = el.querySelector<HTMLElement>('[data-state-fill]')!;
+    const PHASES: Array<[number, string, string]> = [
+      [0.4, 'inherited', 'INHERITED'],
+      [0.72, 'excited', 'EXCITED'],
+      [Infinity, 'specified', 'SPECIFIED'],
+    ];
+    let phase = '';
+    let ticking = false;
+
+    function update() {
+      const max = document.documentElement.scrollHeight - window.innerHeight;
+      const p = max > 0 ? Math.min(1, Math.max(0, window.scrollY / max)) : 0;
+      fillEl.style.width = (p * 100).toFixed(1) + '%';
+      const hit = PHASES.find(([limit]) => p < limit)!;
+      if (hit[1] !== phase) {
+        phase = hit[1];
+        el!.dataset.phase = phase;
+        valueEl.textContent = hit[2];
+      }
+    }
+
+    window.addEventListener(
+      'scroll',
+      () => {
+        if (ticking) return;
+        ticking = true;
+        requestAnimationFrame(() => { update(); ticking = false; });
+      },
+      { passive: true }
+    );
+    window.addEventListener('resize', update, { passive: true });
+    update();
+  }
+</script>

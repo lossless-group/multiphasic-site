@@ -1,0 +1,266 @@
+---
+import BaseThemeLayout from '../../../layouts/BaseThemeLayout.astro';
+import DiptychType from '../../../components/diptych/DiptychType.astro';
+import ModeToggle from '../../../components/ui/ModeToggle.astro';
+import Wordmark from '../../../components/basics/Wordmark.astro';
+import OverdesignMass from '../../../components/flare/OverdesignMass.astro';
+
+/* Flare review page for OverdesignMass. Specimens are mounted on both grounds
+ * because the component is the one flare that appears on either side of the
+ * beam, and `tone` is the only thing that decides which. */
+
+const props = [
+  ['state', "'hedged' | 'specified' | 'morph'", "'morph'", 'Ship-as-built, true-performance, or the shed between them.'],
+  ['profile', "'i-beam' | 'bracket'", "'i-beam'", 'Which section is drawn. Both are read instantly by anyone who has sized one.'],
+  ['ratio', 'number', '2', 'Mass multiplier the hedged section carries. Geometry is solved from this, not eyeballed.'],
+  ['size', 'number (px)', '220', 'Rendered square size.'],
+  ['tone', "'cost' | 'gain' | 'neutral'", 'cost, or gain when state="specified"', 'The only colour decision. Never picked by the component itself.'],
+  ['label', 'boolean', 'true', 'The mono mass readout under the section.'],
+  ['trigger', "'scroll' | 'hover'", "'scroll'", 'What starts the shed in state="morph".'],
+];
+---
+
+<BaseThemeLayout title="OverdesignMass — flare review" theme="diptych" mode="light">
+  <DiptychType />
+
+  <header class="ds-chrome">
+    <Wordmark size={24} />
+    <div class="ds-chrome-right">
+      <a href="/design-system/flare/BeamDivider">BeamDivider</a>
+      <a href="/diptych">Direction C</a>
+      <ModeToggle />
+    </div>
+  </header>
+
+  <main class="ds">
+    <p class="dx-eyebrow on-past">Flare &middot; Direction C</p>
+    <h1 class="dx-h2">OverdesignMass</h1>
+    <p class="dx-lede ds-lede">
+      "Up to 2× the material and weight, added purely as a hedge" — drawn as a part rather than
+      asserted as a number. The hatched region is the hedge; the solid section underneath is what
+      the part would be if material state were specified. Scroll to it and the hedge lets go.
+    </p>
+
+    <section class="ds-block">
+      <h2 class="dx-h3">The three states, on their own grounds</h2>
+      <div class="ds-grounds">
+        <div class="ds-half ds-half-past">
+          <span class="dx-tag on-past">Inherited &middot; cost</span>
+          <div class="ds-row">
+            <figure class="ds-fig">
+              <OverdesignMass state="hedged" tone="cost" size={168} />
+              <figcaption class="dx-note on-past">state="hedged"</figcaption>
+            </figure>
+            <figure class="ds-fig">
+              <OverdesignMass state="morph" tone="cost" size={168} />
+              <figcaption class="dx-note on-past">state="morph"</figcaption>
+            </figure>
+          </div>
+        </div>
+        <div class="ds-half ds-half-future">
+          <span class="dx-tag on-future">Specified &middot; gain</span>
+          <div class="ds-row">
+            <figure class="ds-fig">
+              <OverdesignMass state="specified" tone="gain" size={168} />
+              <figcaption class="dx-note on-future">state="specified"</figcaption>
+            </figure>
+          </div>
+        </div>
+      </div>
+      <p class="dx-note ds-note">
+        The component never names a colour. <code>tone</code> does, and the page only ever passes
+        <code>cost</code> left of the beam and <code>gain</code> right of it.
+      </p>
+    </section>
+
+    <section class="ds-block">
+      <h2 class="dx-h3">Profiles</h2>
+      <p class="dx-note ds-note">
+        Hover either one — <code>trigger="hover"</code> makes the shed an inspection gesture
+        rather than a scroll event.
+      </p>
+      <div class="ds-row ds-row-wide">
+        <figure class="ds-fig">
+          <OverdesignMass state="morph" profile="i-beam" trigger="hover" tone="cost" size={200} />
+          <figcaption class="dx-note">profile="i-beam"</figcaption>
+        </figure>
+        <figure class="ds-fig">
+          <OverdesignMass state="morph" profile="bracket" trigger="hover" tone="cost" size={200} />
+          <figcaption class="dx-note">profile="bracket"</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="ds-block">
+      <h2 class="dx-h3">Ratio drives the geometry</h2>
+      <p class="dx-note ds-note">
+        Section thickness is solved so the hedged area is exactly <code>ratio</code> times the
+        core area, inside an unchanged envelope. The readout is measured off the paths that were
+        actually drawn — check the arithmetic against them.
+      </p>
+      <div class="ds-row ds-row-wide">
+        {
+          [1.25, 1.5, 2, 3].map((r) => (
+            <figure class="ds-fig">
+              <OverdesignMass state="hedged" ratio={r} tone="neutral" size={150} />
+              <figcaption class="dx-note">ratio={'{'}{r}{'}'}</figcaption>
+            </figure>
+          ))
+        }
+      </div>
+    </section>
+
+    <section class="ds-block">
+      <h2 class="dx-h3">Props</h2>
+      <div class="ds-table-wrap">
+        <table class="ds-table">
+        <thead>
+          <tr><th>Prop</th><th>Type</th><th>Default</th><th>Notes</th></tr>
+        </thead>
+        <tbody>
+          {props.map(([n, t, d, note]) => (
+            <tr>
+              <td><code>{n}</code></td>
+              <td><code>{t}</code></td>
+              <td><code>{d}</code></td>
+              <td>{note}</td>
+            </tr>
+          ))}
+        </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="ds-block">
+      <h2 class="dx-h3">Reduced motion</h2>
+      <p class="dx-note ds-note">
+        The shed does not run. The hedge is drawn at a third opacity instead of disappearing, so
+        it still reads as material that did not need to be there, and both figures stay in the
+        readout. A static state that still makes the point, not a state with the point removed.
+      </p>
+    </section>
+  </main>
+</BaseThemeLayout>
+
+<style>
+  .ds-chrome {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.85rem var(--dp-edge);
+    background: var(--color-background);
+    border-bottom: 1px solid var(--color-border);
+  }
+  .ds-chrome-right {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+  }
+  .ds-chrome-right a {
+    font-family: var(--font-data);
+    font-size: 0.68rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    text-decoration: none;
+    color: var(--color-text-muted);
+  }
+  .ds-chrome-right a:hover {
+    color: var(--color-primary);
+  }
+
+  .ds {
+    max-width: 62rem;
+    margin: 0 auto;
+    padding: clamp(2.5rem, 6vw, 4.5rem) var(--dp-edge) 6rem;
+    color: var(--color-text);
+  }
+  .ds-lede {
+    margin-top: 1rem;
+    max-width: 56ch;
+    color: var(--color-text-muted);
+  }
+  .ds-block {
+    margin-top: clamp(2.75rem, 6vw, 4rem);
+    padding-top: 1.75rem;
+    border-top: 1px solid var(--color-border);
+  }
+  .ds-note {
+    margin-top: 0.9rem;
+    color: var(--color-text-muted);
+    max-width: 62ch;
+  }
+
+  .ds-grounds {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    margin-top: 1.5rem;
+  }
+  .ds-half {
+    padding: 1.5rem;
+  }
+  .ds-half-past {
+    background: var(--color-past-bg);
+    background-image: var(--fx-past-texture, none);
+  }
+  .ds-half-future {
+    background: var(--color-future-bg);
+  }
+  .ds-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    margin-top: 1.25rem;
+  }
+  .ds-row-wide {
+    gap: 2rem;
+  }
+  .ds-fig {
+    margin: 0;
+  }
+  .ds-fig figcaption {
+    margin-top: 0.6rem;
+    color: var(--color-text-muted);
+  }
+
+  .ds-table-wrap {
+    overflow-x: auto;
+    margin-top: 1.25rem;
+  }
+  .ds-table {
+    width: 100%;
+    min-width: 34rem;
+    border-collapse: collapse;
+    font-family: var(--font-body);
+    font-size: 0.86rem;
+    font-weight: 300;
+  }
+  .ds-table th,
+  .ds-table td {
+    text-align: left;
+    vertical-align: top;
+    padding: 0.7rem 0.75rem 0.7rem 0;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .ds-table th {
+    font-family: var(--font-data);
+    font-size: 0.66rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+  }
+  code {
+    font-family: var(--font-data);
+    font-size: 0.8em;
+    color: var(--color-primary);
+  }
+
+  @media (max-width: 720px) {
+    .ds-grounds {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

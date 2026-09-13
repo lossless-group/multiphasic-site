@@ -1,0 +1,165 @@
+---
+import BeamDivider from '../flare/BeamDivider.astro';
+
+/* ============================================================================
+ * DiptychSection — the shell every beat is built in.
+ *
+ * WHAT IT PAINTS
+ *   ground        the past half. It *is* the page ground, always.
+ *   ground-future a full-bleed layer of the future ground, clipped at the beam.
+ *                 As the reader scrolls, the clip retreats leftward toward the
+ *                 seam: the navy field sweeps in, led by the beam.
+ *   beam          BeamDivider, positioned at the clip edge.
+ *
+ * WHY THE CONTENT NEVER MOVES
+ *   The content columns are fixed at `--split` for the life of the section.
+ *   Only the ground clip and the beam travel; the future column's *content*
+ *   fades and settles the last few pixels behind the wipe. Prose that reflows
+ *   under the reader's eye at 60fps reads as broken, not as designed.
+ *
+ * THE SPLIT CARRIES THE ARGUMENT
+ *   `split` is a resting value chosen per beat, and it migrates down the page:
+ *   even at the thesis, wide-left where the cost is stated, back to centre at
+ *   the mechanism, then narrowing until the past is a margin at the vision.
+ *   The beam walks across the page as the argument is won.
+ *
+ * NO JS  → `--reveal-x` stays at the split and `--reveal-in` at 1: a static
+ *          side-by-side, fully readable, nothing missing.
+ * REDUCED MOTION → same, plus the scroll driver never binds.
+ * ========================================================================== */
+
+export interface Props {
+  id: string;
+  /** Resting content boundary, as a percentage of section width. */
+  split?: number;
+  /** Scroll-driven wipe. false locks the seam (the mechanism beat holds still). */
+  wipe?: boolean;
+  /** Renders a grab handle on the beam and lets the reader push the seam. */
+  drag?: boolean;
+  intensity?: 'low' | 'medium' | 'high';
+  /** Extra top/bottom air. */
+  size?: 'tall' | 'normal' | 'short';
+  class?: string;
+}
+
+const {
+  id,
+  split = 50,
+  wipe = true,
+  drag = false,
+  intensity = 'medium',
+  size = 'normal',
+  class: className = '',
+} = Astro.props;
+---
+
+<section
+  class:list={['dp', className]}
+  id={id}
+  data-diptych
+  data-wipe={wipe ? 'true' : 'false'}
+  data-drag={drag ? 'true' : 'false'}
+  data-size={size}
+  style={`--split:${split}%`}
+>
+  <div class="dp-texture" aria-hidden="true"></div>
+  <div class="dp-ground-future" aria-hidden="true"></div>
+
+  <div class="dp-beam-slot" aria-hidden={drag ? undefined : 'true'}>
+    <BeamDivider
+      orientation="vertical"
+      intensity={intensity}
+      height="100%"
+      reveal={drag ? 'drag' : wipe ? 'scroll' : 'none'}
+    />
+  </div>
+
+  <div class="dp-body">
+    <slot />
+  </div>
+</section>
+
+<style>
+  .dp {
+    --split-lo: 0%;
+    --split-hi: 100%;
+    --split-eff: clamp(var(--split-lo), var(--split), var(--split-hi));
+    --reveal-x: var(--split-eff);
+    --reveal-in: 1;
+
+    position: relative;
+    isolation: isolate;
+    background: var(--color-past-bg);
+    color: var(--color-past-text);
+    overflow: clip;
+  }
+
+  .dp[data-size='tall'] {
+    padding-block: clamp(4rem, 11vh, 8.5rem);
+  }
+  .dp[data-size='normal'] {
+    padding-block: clamp(3.25rem, 8vh, 6.5rem);
+  }
+  .dp[data-size='short'] {
+    padding-block: clamp(2.5rem, 6vh, 4.5rem);
+  }
+
+  /* the past half carries grain in the dark modes; nothing in light */
+  .dp-texture {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    background-image: var(--fx-past-texture, none);
+    opacity: var(--fx-past-texture-opacity, 0);
+    pointer-events: none;
+  }
+
+  /* the future ground, clipped at the beam. This is the wipe. */
+  .dp-ground-future {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background:
+      linear-gradient(to right, var(--color-future-sheen), transparent 42%),
+      var(--color-future-bg);
+    clip-path: inset(0 0 0 var(--reveal-x));
+    pointer-events: none;
+  }
+
+  .dp-beam-slot {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: var(--reveal-x);
+    width: var(--fx-beam-box, 110px);
+    transform: translateX(-50%);
+    z-index: 3;
+    pointer-events: none;
+  }
+
+  .dp-body {
+    position: relative;
+    z-index: 2;
+  }
+
+  /* Narrow: the diptych stops being two columns and becomes before-then-after.
+   * The vertical beam retires; each row grows its own horizontal seam. */
+  @media (max-width: 899px) {
+    .dp[data-size] {
+      --split-eff: 100%;
+      padding-block: 0;
+    }
+    .dp-ground-future,
+    .dp-beam-slot {
+      display: none;
+    }
+  }
+
+  /* Mid widths: pull the extreme splits back so neither column starves. */
+  @media (min-width: 900px) and (max-width: 1180px) {
+    .dp {
+      --split-lo: 36%;
+      --split-hi: 64%;
+    }
+  }
+</style>

@@ -1,0 +1,155 @@
+---
+/* CostTable — beat 3. The four cost figures set as a data table, not as pill
+ * cards: mechanism, magnitude, consequence. Magnitudes are right-aligned and
+ * tabular so the column reads as a column. There is no row-number column —
+ * the mechanism names already identify the rows, and a bare index would be
+ * furniture pretending to be data.
+ *
+ * Coral goes on exactly one value — INSPECTION, up to 50% of component cost.
+ * It is the largest priced consequence of the control gap and the number a
+ * procurement engineer will carry out of the section. Everything else is
+ * cyan. Scarcity is the point.
+ *
+ * The values count up once, on reveal, and never again. */
+import type { CollectionEntry } from 'astro:content';
+import SectionHeader from './SectionHeader.astro';
+
+export interface Props { beat: CollectionEntry<'beats'> }
+const { beat } = Astro.props;
+const d = beat.data as any;
+const stats: { label: string; value: string; qualifier?: string; body?: string }[] =
+  d.stats ?? [];
+
+// The one number that gets coral. Matched by label so re-ordering the
+// markdown doesn't silently move the emphasis.
+const primary = Math.max(0, stats.findIndex((s) => s.label === 'INSPECTION'));
+---
+
+<section class="cost" id={d.slug_id}>
+  <SectionHeader index={d.order} eyebrow={d.eyebrow} />
+
+  <h2 class="beat-title">{d.title}</h2>
+  {d.sub && <p class="beat-sub">{d.sub}</p>}
+
+  <table class="ct">
+    <caption class="ct-caption">Cost of unspecified material state, by mechanism</caption>
+    <thead>
+      <tr>
+        <th scope="col" class="ct-metric">MECHANISM</th>
+        <th scope="col" class="ct-value">MAGNITUDE</th>
+        <th scope="col" class="ct-body">CONSEQUENCE</th>
+      </tr>
+    </thead>
+    <tbody>
+      {stats.map((s, i) => (
+        <tr class:list={[i === primary && 'is-primary']}>
+          <th scope="row" class="ct-metric">{s.label}</th>
+          <td class="ct-value">
+            {s.qualifier && <span class="ct-qual">{s.qualifier}</span>}
+            <span class="ct-num" data-countup={s.value}>{s.value}</span>
+          </td>
+          <td class="ct-body">{s.body}</td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+
+  <div class="beat-note is-footnote"><slot /></div>
+</section>
+
+<style>
+  .ct {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: clamp(2rem, 4vw, 3rem);
+    text-align: left;
+  }
+  .ct-caption {
+    caption-side: top;
+    text-align: left;
+    font-family: var(--font-data);
+    font-size: 0.63rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--color-text-faint);
+    padding-bottom: 0.85rem;
+  }
+  .ct thead th {
+    font-family: var(--font-data);
+    font-weight: 400;
+    font-size: 0.63rem;
+    letter-spacing: 0.2em;
+    color: var(--color-text-faint);
+    padding: 0 0.9rem 0.7rem;
+    border-bottom: 1px solid var(--color-rule);
+  }
+  .ct thead th:first-child { padding-left: 0; }
+  .ct thead th:last-child { padding-right: 0; }
+
+  .ct tbody tr { border-bottom: 1px solid var(--color-border); }
+  .ct tbody td,
+  .ct tbody th {
+    padding: 1.35rem 0.9rem;
+    vertical-align: baseline;
+  }
+  .ct tbody td:first-child, .ct tbody th:first-child { padding-left: 0; }
+  .ct tbody td:last-child, .ct tbody th:last-child { padding-right: 0; }
+
+  .ct-metric {
+    font-family: var(--font-data);
+    font-weight: 500;
+    font-size: 0.74rem;
+    letter-spacing: 0.16em;
+    color: var(--color-primary);
+    white-space: nowrap;
+  }
+  .ct-value {
+    text-align: right;
+    white-space: nowrap;
+    width: 1%;
+  }
+  .ct-qual {
+    display: block;
+    font-family: var(--font-data);
+    font-size: 0.62rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--color-text-faint);
+    margin-bottom: 0.15rem;
+  }
+  .ct-num {
+    display: block;
+    font-family: var(--font-data);
+    font-weight: 300;
+    font-variant-numeric: tabular-nums;
+    font-size: clamp(2rem, 5.2vw, 3.4rem);
+    line-height: 0.95;
+    letter-spacing: -0.04em;
+    color: var(--color-text);
+  }
+  /* The single coral of this screen. */
+  .is-primary .ct-num {
+    color: var(--color-accent);
+    text-shadow: 0 0 26px color-mix(in srgb, var(--color-accent) calc(var(--fx-glow-opacity) * 100%), transparent);
+  }
+  .is-primary .ct-metric { color: var(--color-accent); }
+
+  .ct-body {
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+    line-height: 1.6;
+    max-width: 44ch;
+  }
+
+  /* Below 760px the table stops being a table and becomes stacked records —
+   * the header row is dropped and each cell carries its own label. */
+  @media (max-width: 760px) {
+    .ct thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+    .ct tbody tr { display: block; padding-block: 1.35rem; }
+    .ct tbody td, .ct tbody th { padding: 0; }
+    .ct-value { text-align: left; width: auto; margin: 0.6rem 0 0.7rem; }
+    .ct-qual { display: inline; margin-right: 0.6ch; }
+    .ct-num { display: inline; }
+    .ct-body { max-width: none; }
+  }
+</style>

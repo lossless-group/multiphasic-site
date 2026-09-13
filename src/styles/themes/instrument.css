@@ -1,0 +1,127 @@
+/* ============================================================================
+ * DIRECTION A — "Phase Diagram" · theme slug `instrument`
+ *
+ * TIER 2 semantic tokens. kebab-case only. Tier 1 `--color__*` / `--font__*`
+ * live in global.css and may be referenced ONLY from inside this file.
+ * No component in src/components/instrument/ or the two owned flare
+ * components reads a `__` token — they read the kebab tokens below.
+ *
+ * The premise: the page is an instrument readout — a certified materials
+ * test report, not a brochure. So the palette is a bezel, a plate, a trace,
+ * and one alarm colour. Coral is the alarm. It appears at most once per
+ * screen, always on the thing that matters most, and often not at all.
+ *
+ * Mode intent
+ *   dark    — the instrument on the bench. Deck navy bezel, navy plate,
+ *             cyan trace, coral alarm.
+ *   light   — the same readout printed. Cool plotter vellum (deliberately
+ *             NOT warm cream), navy ink, cyan pushed deep so it survives
+ *             on white, coral darkened just enough to clear AA-large.
+ *   vibrant — the instrument under UV. Plum-void ground, violet graticule
+ *             and rules that fluoresce, cyan-ice phosphor trace, magenta
+ *             alarm. DARK-BASED — every ground/surface/text/border below
+ *             is set explicitly. Nothing inherits light mode.
+ * ========================================================================== */
+
+[data-theme="instrument"] {
+  /* Type is mode-invariant. Space Grotesk carries the wordmark's wide
+   * geometric proportions; JetBrains Mono is the data face and takes every
+   * number, unit, axis tick, index and category label without exception. */
+  --font-display: var(--font__space-grotesk);
+  --font-body: var(--font__inter);
+  --font-data: var(--font__jetbrains-mono);
+  --font-eyebrow: var(--font__jetbrains-mono);
+
+  /* Measure + rhythm. The rail width is the page's structural constant:
+   * every section index, tick and hairline origin hangs off it. */
+  --rail-width: 5.75rem;
+  --page-measure: 78rem;
+  --grid-pitch: 56px;
+}
+
+/* ---------------------------------------------------------------- dark --- */
+[data-theme="instrument"][data-mode="dark"] {
+  /* Bezel is a touch below deck navy so the plate reads as a separate sheet
+   * sitting on it. Near-flat: 6% of luminance separates ground from plate. */
+  --color-background: color-mix(in srgb, var(--color__navy-abyss) 62%, var(--color__navy-deep));
+  --color-surface: var(--color__navy-deep);
+  --color-surface-raised: var(--color__navy-slate);
+
+  --color-text: var(--color__steel-100);
+  --color-text-muted: var(--color__steel-400);
+  --color-text-faint: color-mix(in srgb, var(--color__steel-400) 52%, transparent);
+
+  --color-primary: var(--color__cyan-signal);
+  --color-primary-soft: color-mix(in srgb, var(--color__cyan-signal) 32%, transparent);
+  --color-accent: var(--color__coral-strike);
+
+  --color-border: color-mix(in srgb, var(--color__steel-400) 26%, transparent);
+  --color-rule: color-mix(in srgb, var(--color__steel-400) 46%, transparent);
+  --color-grid: color-mix(in srgb, var(--color__steel-400) 13%, transparent);
+  --color-trace: var(--color__cyan-signal);
+  --color-plate: color-mix(in srgb, var(--color__navy-deep) 72%, transparent);
+
+  --fx-grid-opacity: 0.9;
+  --fx-glow-opacity: 0.24;
+  --fx-trace-width: 2.4;
+  --fx-bloom: transparent;
+}
+
+/* --------------------------------------------------------------- light --- */
+[data-theme="instrument"][data-mode="light"] {
+  /* Cool vellum, not warm cream. The paper token is pulled toward steel so
+   * the sheet reads as a plotter output rather than a stationery mock-up. */
+  --color-background: color-mix(in srgb, var(--color__paper) 74%, var(--color__steel-100));
+  --color-surface: var(--color__white);
+  --color-surface-raised: var(--color__white);
+
+  --color-text: var(--color__navy-abyss);
+  --color-text-muted: var(--color__steel-700);
+  --color-text-faint: color-mix(in srgb, var(--color__steel-700) 52%, transparent);
+
+  /* Cyan at full chroma dies on white. Sunk into navy it stays recognisably
+   * the same signal colour and clears AA for label-size text. */
+  --color-primary: color-mix(in srgb, var(--color__cyan-signal) 62%, var(--color__navy-abyss));
+  --color-primary-soft: color-mix(in srgb, var(--color__cyan-signal) 26%, transparent);
+  --color-accent: color-mix(in srgb, var(--color__coral-strike) 84%, var(--color__navy-abyss));
+
+  --color-border: color-mix(in srgb, var(--color__navy-abyss) 16%, transparent);
+  --color-rule: color-mix(in srgb, var(--color__navy-abyss) 34%, transparent);
+  --color-grid: color-mix(in srgb, var(--color__steel-700) 11%, transparent);
+  --color-trace: color-mix(in srgb, var(--color__cyan-signal) 62%, var(--color__navy-abyss));
+  --color-plate: var(--color__white);
+
+  --fx-grid-opacity: 0.85;
+  --fx-glow-opacity: 0;
+  --fx-trace-width: 2.0;
+  --fx-bloom: transparent;
+}
+
+/* ------------------------------------------------------------- vibrant --- */
+/* DARK-BASED. background / surface / text / border all set explicitly. */
+[data-theme="instrument"][data-mode="vibrant"] {
+  --color-background: var(--color__plum-void);
+  --color-surface: var(--color__plum-shadow);
+  --color-surface-raised: color-mix(in srgb, var(--color__violet-deep) 20%, var(--color__plum-shadow));
+
+  --color-text: var(--color__white);
+  --color-text-muted: color-mix(in srgb, var(--color__cyan-ice) 78%, var(--color__violet-pulse));
+  --color-text-faint: color-mix(in srgb, var(--color__violet-pulse) 66%, transparent);
+
+  /* The trace fluoresces: cyan-ice is the phosphor, magenta is the alarm. */
+  --color-primary: var(--color__cyan-ice);
+  --color-primary-soft: color-mix(in srgb, var(--color__cyan-ice) 30%, transparent);
+  --color-accent: var(--color__magenta-excite);
+
+  /* Rules and graticule are violet — the UV lamp is what's lighting them. */
+  --color-border: color-mix(in srgb, var(--color__violet-pulse) 42%, transparent);
+  --color-rule: color-mix(in srgb, var(--color__violet-pulse) 72%, transparent);
+  --color-grid: color-mix(in srgb, var(--color__violet-pulse) 26%, transparent);
+  --color-trace: var(--color__cyan-ice);
+  --color-plate: color-mix(in srgb, var(--color__plum-shadow) 82%, transparent);
+
+  --fx-grid-opacity: 1;
+  --fx-glow-opacity: 0.6;
+  --fx-trace-width: 2.8;
+  --fx-bloom: color-mix(in srgb, var(--color__violet-pulse) 15%, transparent);
+}

@@ -1,0 +1,247 @@
+---
+/* Flare catalog — PhaseField.
+ * Direction A · theme `instrument`. Secondary flare: an EBSD-style
+ * polycrystalline orientation map that reorganises on hover or reveal. */
+import BaseThemeLayout from '../../../layouts/BaseThemeLayout.astro';
+import Wordmark from '../../../components/basics/Wordmark.astro';
+import ModeToggle from '../../../components/ui/ModeToggle.astro';
+import PhaseField from '../../../components/flare/PhaseField.astro';
+
+const props = [
+  ['width / height', 'number', '520 / 380', 'Sets the viewBox aspect. The element scales to its container width.'],
+  ['cells', 'number', '44', 'Approximate grain count. Rounded to a grid that matches the aspect.'],
+  ['seed', 'number', '20260826', 'Deterministic. Same seed, same field, every build.'],
+  ['tint', 'string', 'var(--color-primary)', 'Primary grain tint.'],
+  ['tintAlt', 'string', 'var(--color-text-muted)', 'Second-phase tint. Duotone keeps it quiet enough to sit near text.'],
+  ['boundary', 'string', 'var(--color-rule)', 'Grain-boundary stroke.'],
+  ['trigger', "'hover' | 'reveal' | 'both' | 'none'", "'both'", 'What flips the field to its conditioned state.'],
+  ['motion', "'auto' | 'static'", "'auto'", "'static' pins the as-received field and disables the transition."],
+  ['label', 'string', "'EBSD · ORIENTATION MAP'", 'Mono plate label. Pass an empty string to suppress it.'],
+];
+---
+
+<BaseThemeLayout title="Flare — PhaseField" theme="instrument" mode="dark">
+  <header class="ds-chrome">
+    <Wordmark size={26} />
+    <span class="ds-crumb">DESIGN SYSTEM / FLARE / PHASEFIELD</span>
+    <ModeToggle />
+  </header>
+
+  <main class="ds">
+    <p class="ds-eyebrow">DIRECTION A · THEME INSTRUMENT</p>
+    <h1>PhaseField</h1>
+    <p class="ds-lede">
+      A polycrystalline grain map drawn the way an electron-backscatter diffraction scan
+      renders one. Two true Voronoi tessellations are built at compile time from the same
+      seeded site set at two jitter amplitudes: an as-received field with irregular,
+      unevenly-sized grains and a wide orientation spread, and a conditioned field that
+      is equiaxed with a narrow one. Cells are computed by Sutherland–Hodgman clipping
+      the frame against every perpendicular bisector — no geometry library.
+    </p>
+
+    <section class="ds-block">
+      <h2>01 / Default — trigger="both"</h2>
+      <p class="ds-note">
+        Flips once on reveal and holds for 2.6 seconds, then rests. Hover or keyboard
+        focus flips it for as long as the pointer stays. The plate label reports the
+        current state so the change is legible rather than merely pretty.
+      </p>
+      <div class="ds-stage ds-stage-narrow"><PhaseField /></div>
+    </section>
+
+    <section class="ds-block">
+      <h2>02 / Grain count and seed</h2>
+      <p class="ds-note">
+        Coarse and fine fields from different seeds. Grain count is the only real
+        parameter — everything else follows from the tessellation.
+      </p>
+      <div class="ds-row">
+        <PhaseField cells={14} seed={4} label="COARSE · n≈14" width={420} height={320} />
+        <PhaseField cells={44} seed={99} label="MEDIUM · n≈44" width={420} height={320} />
+        <PhaseField cells={120} seed={7} label="FINE · n≈120" width={420} height={320} />
+      </div>
+    </section>
+
+    <section class="ds-block">
+      <h2>03 / trigger="hover" and motion="static"</h2>
+      <p class="ds-note">
+        Hover-only suppresses the reveal flip — used when the field sits near text and a
+        self-starting animation would pull focus. Static pins the as-received field: it
+        is what a reduced-motion visitor sees, because the beat this component serves is
+        about the state nobody currently specifies.
+      </p>
+      <div class="ds-row">
+        <PhaseField trigger="hover" label="HOVER ONLY" width={420} height={300} />
+        <PhaseField motion="static" label="STATIC · AS RECEIVED" width={420} height={300} />
+      </div>
+    </section>
+
+    <section class="ds-block">
+      <h2>04 / Colour overrides</h2>
+      <p class="ds-note">
+        Left at their defaults the tints follow the active mode. Forcing them is for the
+        rare case where the field sits on an inverted plate.
+      </p>
+      <div class="ds-row">
+        <PhaseField
+          tint="var(--color-accent)"
+          tintAlt="var(--color-primary)"
+          boundary="var(--color-border)"
+          label="TINT · ACCENT / PRIMARY"
+          width={420}
+          height={300}
+        />
+        <PhaseField
+          tint="var(--color-text-muted)"
+          tintAlt="var(--color-text-faint)"
+          label="TINT · MONOCHROME"
+          width={420}
+          height={300}
+        />
+      </div>
+    </section>
+
+    <section class="ds-block">
+      <h2>05 / Props</h2>
+      <table class="ds-table">
+        <thead>
+          <tr><th>PROP</th><th>TYPE</th><th>DEFAULT</th><th>NOTE</th></tr>
+        </thead>
+        <tbody>
+          {props.map(([n, t, d, note]) => (
+            <tr>
+              <td class="ds-mono ds-key">{n}</td>
+              <td class="ds-mono">{t}</td>
+              <td class="ds-mono">{d}</td>
+              <td>{note}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </section>
+
+    <section class="ds-block">
+      <h2>06 / Contract</h2>
+      <ul class="ds-list">
+        <li>Reads only kebab-case semantic tokens.</li>
+        <li>Tessellation runs at build time. The client ships one observer and two pointer handlers.</li>
+        <li>SVG only. No canvas, no geometry library, no animation library.</li>
+        <li><code>prefers-reduced-motion: reduce</code> keeps the as-received field and disables the transition; hover still resolves, instantly.</li>
+        <li>Decorative by intent but not by markup — the SVG carries a real description of both states.</li>
+      </ul>
+    </section>
+  </main>
+</BaseThemeLayout>
+
+<style is:global>
+  .ds-chrome {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 0.9rem clamp(1rem, 4vw, 3rem);
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-background);
+  }
+  .ds-crumb {
+    margin-left: auto;
+    font-family: var(--font-data);
+    font-size: 0.62rem;
+    letter-spacing: 0.18em;
+    color: var(--color-text-faint);
+  }
+  .ds {
+    max-width: 66rem;
+    margin: 0 auto;
+    padding: clamp(2.5rem, 6vw, 4.5rem) clamp(1rem, 4vw, 3rem) 6rem;
+  }
+  .ds-eyebrow {
+    font-family: var(--font-data);
+    font-size: 0.66rem;
+    letter-spacing: 0.24em;
+    color: var(--color-primary);
+    margin-bottom: 1rem;
+  }
+  .ds h1 {
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: clamp(2rem, 5vw, 3rem);
+    letter-spacing: -0.03em;
+    line-height: 1.05;
+  }
+  .ds-lede {
+    margin-top: 1.25rem;
+    max-width: 62ch;
+    color: var(--color-text-muted);
+    line-height: 1.65;
+  }
+  .ds-block {
+    margin-top: clamp(3rem, 7vw, 5rem);
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--color-rule);
+  }
+  .ds-block h2 {
+    font-family: var(--font-data);
+    font-weight: 500;
+    font-size: 0.76rem;
+    letter-spacing: 0.2em;
+    color: var(--color-primary);
+    margin-bottom: 0.9rem;
+  }
+  .ds-note {
+    max-width: 62ch;
+    color: var(--color-text-muted);
+    font-size: 0.93rem;
+    line-height: 1.65;
+    margin-bottom: 1.75rem;
+  }
+  .ds-stage {
+    border: 1px solid var(--color-border);
+    background: var(--color-plate);
+    padding: clamp(1rem, 3vw, 2rem);
+  }
+  .ds-stage-narrow { max-width: 34rem; }
+  .ds-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+    gap: 1.5rem;
+  }
+  .ds code {
+    font-family: var(--font-data);
+    font-size: 0.88em;
+    color: var(--color-primary);
+  }
+  .ds-table { width: 100%; border-collapse: collapse; }
+  .ds-table th {
+    text-align: left;
+    font-family: var(--font-data);
+    font-weight: 400;
+    font-size: 0.62rem;
+    letter-spacing: 0.2em;
+    color: var(--color-text-faint);
+    padding: 0 1rem 0.65rem 0;
+    border-bottom: 1px solid var(--color-rule);
+  }
+  .ds-table td {
+    padding: 0.85rem 1rem 0.85rem 0;
+    border-bottom: 1px solid var(--color-border);
+    font-size: 0.9rem;
+    line-height: 1.55;
+    color: var(--color-text-muted);
+    vertical-align: top;
+  }
+  .ds-mono { font-family: var(--font-data); font-size: 0.76rem !important; }
+  .ds-key { color: var(--color-text); }
+  .ds-list { margin: 0; padding-left: 1.2rem; color: var(--color-text-muted); }
+  .ds-list li { margin-bottom: 0.6rem; line-height: 1.6; font-size: 0.93rem; }
+
+  @media (max-width: 700px) {
+    .ds-crumb { display: none; }
+    .ds-table, .ds-table tbody, .ds-table tr, .ds-table td { display: block; width: 100%; }
+    .ds-table thead { display: none; }
+    .ds-table tr { padding: 0.9rem 0; border-bottom: 1px solid var(--color-border); }
+    .ds-table td { border: 0; padding: 0.15rem 0; }
+  }
+</style>

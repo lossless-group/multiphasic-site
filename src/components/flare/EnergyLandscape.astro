@@ -1,0 +1,569 @@
+---
+/* ============================================================================
+ * EnergyLandscape — the metastable-well diagram, scroll-driven.
+ *
+ * What it shows, and why it is the most honest picture of the company:
+ * a potential-energy curve over a configuration coordinate. A marker rests
+ * in a shallow local minimum — CONVENTIONAL, the state the metal inherited
+ * from its thermal history. A tuned pulse arrives, the landscape itself
+ * deforms (the shallow well destabilises, a second well deepens and
+ * narrows), and the marker settles into it: METASTATE. Nothing was added to
+ * the part. The landscape was re-specified.
+ *
+ * IMPLEMENTATION NOTES
+ * - Both curves are sampled from the same analytic potential at the same
+ *   140 points and emitted as Catmull-Rom → cubic beziers. Identical command
+ *   counts means the browser can interpolate the `d` CSS property directly,
+ *   so the deformation is a real CSS transition — no JS tween, no GSAP, no
+ *   WebGL. Where `d` interpolation is unsupported the path snaps; the
+ *   diagram is still correct, just less smooth.
+ * - Geometry is computed at build time in this frontmatter. The client ships
+ *   one IntersectionObserver and nothing else.
+ * - The marker rides CSS `translate` through waypoints derived from the real
+ *   minima and the real barrier crest, so it lands ON the curve rather than
+ *   near it.
+ *
+ * REDUCED MOTION: the figure renders in its final state with the
+ * conventional curve retained as a dashed ghost and both wells labelled —
+ * i.e. the before/after figure you'd print in a paper. Nothing is lost.
+ *
+ * Reads only kebab-case semantic tokens.
+ * ========================================================================== */
+
+export interface Props {
+  /** Rendered height. The SVG scales to width; this caps it. */
+  height?: number;
+  /** Stroke colour of the energy curve. */
+  trace?: string;
+  /** Colour of the settled METASTATE marker and its label. The one coral on this screen. */
+  accent?: string;
+  /** Colour of the resting CONVENTIONAL marker, axes ticks and secondary labels. */
+  muted?: string;
+  /** 'auto' drives from scroll. 'static' renders the final figure immediately. */
+  motion?: 'auto' | 'static';
+  /** Show a mono replay control (useful in the design-system catalog). */
+  replay?: boolean;
+  /** Caption printed under the plot. */
+  caption?: string;
+  class?: string;
+}
+
+const {
+  height = 460,
+  trace = 'var(--color-trace)',
+  accent = 'var(--color-accent)',
+  muted = 'var(--color-text-muted)',
+  motion = 'auto',
+  replay = false,
+  caption = 'Schematic. Configuration coordinate and energy in arbitrary units.',
+  class: className = '',
+} = Astro.props;
+
+/* ---------------------------------------------------------------- geometry */
+const VB_W = 880;
+const VB_H = 470;
+const PAD = { l: 78, r: 42, t: 30, b: 62 };
+const PLOT_W = VB_W - PAD.l - PAD.r;
+const PLOT_H = VB_H - PAD.t - PAD.b;
+const N = 140;
+
+const gauss = (x: number, mu: number, s: number) =>
+  Math.exp(-((x - mu) ** 2) / (2 * s * s));
+
+/* Baseline parabola keeps the curve rising at both edges — a bound state,
+ * not an open one. Wells and the barrier are gaussian perturbations on it. */
+const base = (x: number) => 0.55 + 1.6 * (x - 0.5) ** 2;
+
+/* Inherited landscape: a shallow, wide well at 0.28 (where the metal sits),
+ * a tall barrier at 0.51, and a second well at 0.74 barely deeper than the
+ * first — thermodynamically uninteresting and kinetically unreachable. */
+const vConventional = (x: number) =>
+  base(x) - 0.40 * gauss(x, 0.28, 0.100) - 0.48 * gauss(x, 0.74, 0.110) + 0.34 * gauss(x, 0.51, 0.060);
+
+/* Conditioned landscape: excitation shallows the inherited well, drops the
+ * barrier, and drives the second well deep and narrow. */
+const vMetastate = (x: number) =>
+  base(x) - 0.28 * gauss(x, 0.28, 0.100) - 0.94 * gauss(x, 0.74, 0.062) + 0.19 * gauss(x, 0.51, 0.060);
+
+const xs = Array.from({ length: N }, (_, i) => i / (N - 1));
+const s0 = xs.map(vConventional);
+const s1 = xs.map(vMetastate);
+
+/* One shared value→pixel mapping so the two curves live in the same frame. */
+const yLo = Math.min(...s0, ...s1) - 0.10;
+const yHi = Math.max(...s0, ...s1) + 0.06;
+const px = (x: number) => PAD.l + x * PLOT_W;
+const py = (v: number) => PAD.t + ((yHi - v) / (yHi - yLo)) * PLOT_H;
+
+/* Catmull-Rom → cubic bezier. Same point count in, same command count out. */
+function toPath(vals: number[]): string {
+  const p = xs.map((x, i) => [px(x), py(vals[i])] as [number, number]);
+  const r = (n: number) => Math.round(n * 100) / 100;
+  let d = `M ${r(p[0][0])} ${r(p[0][1])}`;
+  for (let i = 0; i < p.length - 1; i++) {
+    const p0 = p[i - 1] ?? p[i];
+    const p1 = p[i];
+    const p2 = p[i + 1];
+    const p3 = p[i + 2] ?? p2;
+    const c1x = p1[0] + (p2[0] - p0[0]) / 6;
+    const c1y = p1[1] + (p2[1] - p0[1]) / 6;
+    const c2x = p2[0] - (p3[0] - p1[0]) / 6;
+    const c2y = p2[1] - (p3[1] - p1[1]) / 6;
+    d += ` C ${r(c1x)} ${r(c1y)}, ${r(c2x)} ${r(c2y)}, ${r(p2[0])} ${r(p2[1])}`;
+  }
+  return d;
+}
+
+const dConventional = toPath(s0);
+const dMetastate = toPath(s1);
+
+/* Real extrema, scanned — the marker must land on the curve, not near it. */
+function argExtreme(vals: number[], a: number, b: number, mode: 'min' | 'max') {
+  let bi = Math.round(a * (N - 1));
+  for (let i = Math.round(a * (N - 1)); i <= Math.round(b * (N - 1)); i++) {
+    if (mode === 'min' ? vals[i] < vals[bi] : vals[i] > vals[bi]) bi = i;
+  }
+  return bi;
+}
+
+const iWellA = argExtreme(s0, 0.10, 0.42, 'min');
+const iWellB1 = argExtreme(s1, 0.58, 0.94, 'min');
+const iCrest = argExtreme(s1, 0.42, 0.62, 'max');
+
+const R = 9.5;
+const SIT = R * 0.86; // marker rests on the trace, not centred in it
+const wp = {
+  x0: px(xs[iWellA]),
+  y0: py(s0[iWellA]) - SIT,
+  xc: px(xs[iCrest]),
+  yc: py(s1[iCrest]) - SIT,
+  x1: px(xs[iWellB1]),
+  y1: py(s1[iWellB1]) - SIT,
+};
+const yOvershoot = wp.y1 + 5.5;
+const yRebound = wp.y1 - 3.5;
+
+/* Depth guide rails — where each well bottoms out, for the ΔE bracket. */
+const yFloorA = py(s0[iWellA]);
+const yFloorB = py(s1[iWellB1]);
+const xBracket = px(xs[iWellB1]) + 92;
+
+/* One annotation band for both callouts — keeps the figure orderly and
+ * keeps the METASTATE label out of its own well. */
+const BAND = PAD.t + 130;
+
+const gridXs = [0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875];
+const uid = `el-${Math.random().toString(36).slice(2, 8)}`;
+
+const styleVars = [
+  `--el-x0:${wp.x0}px`,
+  `--el-y0:${wp.y0}px`,
+  `--el-xc:${wp.xc}px`,
+  `--el-yc:${wp.yc}px`,
+  `--el-x1:${wp.x1}px`,
+  `--el-y1:${wp.y1}px`,
+  `--el-y1o:${yOvershoot}px`,
+  `--el-y1u:${yRebound}px`,
+  `--el-d1:path('${dMetastate}')`,
+  `--el-trace:${trace}`,
+  `--el-accent:${accent}`,
+  `--el-muted:${muted}`,
+  `--el-max-h:${height}px`,
+].join(';');
+---
+
+<figure
+  class:list={['el', motion === 'static' && 'is-static', className]}
+  data-energy-landscape
+  data-motion={motion}
+  style={styleVars}
+>
+  <svg class="el-svg" viewBox={`0 0 ${VB_W} ${VB_H}`} role="img"
+    aria-label="Potential energy versus configuration coordinate. A marker rests in a shallow local minimum labelled Conventional. An ultrafast pulse deforms the landscape and the marker settles into a deeper, narrower minimum labelled Metastate.">
+
+    <defs>
+      <linearGradient id={`${uid}-sheet`} x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color={accent} stop-opacity="0" />
+        <stop offset="18%" stop-color="var(--color-primary)" stop-opacity="0.9" />
+        <stop offset="82%" stop-color="var(--color-primary)" stop-opacity="0.9" />
+        <stop offset="100%" stop-color={accent} stop-opacity="0" />
+      </linearGradient>
+      <radialGradient id={`${uid}-flash`}>
+        <stop offset="0%" stop-color="var(--color-primary)" stop-opacity="0.85" />
+        <stop offset="100%" stop-color="var(--color-primary)" stop-opacity="0" />
+      </radialGradient>
+      <clipPath id={`${uid}-plot`}>
+        <rect x={PAD.l} y={PAD.t} width={PLOT_W} height={PLOT_H} />
+      </clipPath>
+    </defs>
+
+    {/* graticule ------------------------------------------------------- */}
+    <g class="el-grid">
+      {gridXs.map((g) => (
+        <line x1={px(g)} y1={PAD.t} x2={px(g)} y2={PAD.t + PLOT_H} />
+      ))}
+    </g>
+
+    {/* axes — these draw themselves in ---------------------------------- */}
+    <g class="el-axes">
+      <line class="el-axis el-axis-y" x1={PAD.l} y1={PAD.t + PLOT_H} x2={PAD.l} y2={PAD.t} />
+      <line class="el-axis el-axis-x" x1={PAD.l} y1={PAD.t + PLOT_H} x2={PAD.l + PLOT_W} y2={PAD.t + PLOT_H} />
+      {gridXs.map((g) => (
+        <line class="el-tick" x1={px(g)} y1={PAD.t + PLOT_H} x2={px(g)} y2={PAD.t + PLOT_H + 7} />
+      ))}
+    </g>
+
+    <text class="el-axis-label" x={PAD.l + PLOT_W} y={PAD.t + PLOT_H + 34} text-anchor="end">
+      CONFIGURATION COORDINATE →
+    </text>
+    <text class="el-axis-label" x={-(PAD.t + PLOT_H / 2)} y={21} transform="rotate(-90)" text-anchor="middle">
+      POTENTIAL ENERGY ↑
+    </text>
+
+    <g clip-path={`url(#${uid}-plot)`}>
+      {/* the inherited landscape, kept as a dashed ghost after conditioning */}
+      <path class="el-ghost" d={dConventional} fill="none" />
+
+      {/* the excitation sheet: one pulse, one pass */}
+      <g class="el-pulse">
+        <circle class="el-flash" cx={wp.xc} cy={py(s1[iCrest])} r="150" fill={`url(#${uid}-flash)`} />
+        <rect class="el-sheet" x={wp.xc - 3} y={PAD.t} width="6" height={PLOT_H} fill={`url(#${uid}-sheet)`} />
+      </g>
+
+      {/* the live curve — `d` is what transitions */}
+      <path class="el-curve" d={dConventional} fill="none" />
+    </g>
+
+    {/* depth guide rails + ΔE bracket ----------------------------------- */}
+    <g class="el-delta">
+      <line class="el-rail" x1={px(xs[iWellA])} y1={yFloorA} x2={xBracket + 8} y2={yFloorA} />
+      <line class="el-rail el-rail-b" x1={px(xs[iWellB1])} y1={yFloorB} x2={xBracket + 8} y2={yFloorB} />
+      <path class="el-bracket" d={`M ${xBracket} ${yFloorA} L ${xBracket + 8} ${yFloorA} L ${xBracket + 8} ${yFloorB} L ${xBracket} ${yFloorB}`} fill="none" />
+      <text class="el-delta-label" x={xBracket + 16} y={(yFloorA + yFloorB) / 2 + 4}>ΔE</text>
+    </g>
+
+    {/* well labels ------------------------------------------------------ */}
+    {/* Both callouts sit on one annotation band well clear of the well walls,
+        with dashed leaders down to their markers. The METASTATE well is narrow
+        enough that a label hung directly above it would be cut by both walls —
+        checked against the sampled curve, not eyeballed. */}
+    <g class="el-label el-label-a">
+      <line x1={px(xs[iWellA])} y1={BAND + 28} x2={px(xs[iWellA])} y2={yFloorA - 22} />
+      <text class="el-label-sub" x={px(xs[iWellA])} y={BAND + 16} text-anchor="middle">inherited</text>
+      <text class="el-label-main" x={px(xs[iWellA])} y={BAND} text-anchor="middle">CONVENTIONAL</text>
+    </g>
+
+    <g class="el-label el-label-b">
+      <line x1={px(xs[iWellB1])} y1={BAND + 28} x2={px(xs[iWellB1])} y2={yFloorB - 22} />
+      <text class="el-label-sub" x={px(xs[iWellB1])} y={BAND + 16} text-anchor="middle">specified</text>
+      <text class="el-label-main" x={px(xs[iWellB1])} y={BAND} text-anchor="middle">METASTATE</text>
+    </g>
+
+    {/* the ghost of where it used to sit */}
+    <circle class="el-vacancy" cx={px(xs[iWellA])} cy={py(s0[iWellA]) - SIT} r={R} fill="none" />
+
+    {/* the marker */}
+    <g class="el-marker">
+      <circle class="el-marker-halo" cx="0" cy="0" r={R + 9} />
+      <circle class="el-marker-core" cx="0" cy="0" r={R} />
+    </g>
+
+    <text class="el-plate" x={PAD.l} y={20}>FIG. 01 — POTENTIAL ENERGY LANDSCAPE</text>
+    <text class="el-plate" x={VB_W - PAD.r} y={20} text-anchor="end">SCHEMATIC · NOT TO SCALE</text>
+  </svg>
+
+  <figcaption class="el-cap">
+    <span class="el-cap-text">{caption}</span>
+    {replay && (
+      <button type="button" class="el-replay" data-el-replay>&#8635; REPLAY</button>
+    )}
+  </figcaption>
+</figure>
+
+<script>
+  // Scroll drives the figure. Two thresholds, one observer:
+  //   ≥ 0.28 visible → axes and the inherited curve draw themselves in
+  //   ≥ 0.62 visible → the pulse fires and the landscape deforms
+  // Once conditioned it stays conditioned; the optional replay control resets it.
+  const figures = document.querySelectorAll<HTMLElement>('[data-energy-landscape]');
+  if (figures.length) {
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    figures.forEach((fig) => {
+      const btn = fig.querySelector<HTMLButtonElement>('[data-el-replay]');
+      if (btn) {
+        btn.addEventListener('click', () => {
+          fig.classList.remove('is-conditioned');
+          // force a reflow so the animations restart from frame zero
+          void fig.offsetWidth;
+          requestAnimationFrame(() => fig.classList.add('is-conditioned'));
+        });
+      }
+
+      if (reduce || fig.dataset.motion === 'static') {
+        fig.classList.add('is-visible', 'is-conditioned', 'no-anim');
+        return;
+      }
+
+      const io = new IntersectionObserver(
+        (entries) => {
+          for (const e of entries) {
+            if (e.intersectionRatio >= 0.28) fig.classList.add('is-visible');
+            if (e.intersectionRatio >= 0.62) {
+              fig.classList.add('is-conditioned');
+              io.disconnect();
+            }
+          }
+        },
+        { threshold: [0.28, 0.62] }
+      );
+      io.observe(fig);
+    });
+  }
+</script>
+
+<style>
+  .el {
+    margin: 0;
+    display: block;
+    width: 100%;
+  }
+  .el-svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: var(--el-max-h);
+    overflow: visible;
+  }
+
+  /* --- static furniture ------------------------------------------------ */
+  .el-grid line { stroke: var(--color-grid); stroke-width: 1; }
+  .el-axis,
+  .el-tick { stroke: var(--color-rule); stroke-width: 1.25; }
+
+  .el-axis-label,
+  .el-plate,
+  .el-delta-label,
+  .el-label text {
+    font-family: var(--font-data);
+    font-size: 12px;
+    letter-spacing: 0.13em;
+  }
+  .el-axis-label { fill: var(--el-muted); font-size: 11.5px; }
+  .el-plate { fill: var(--color-text-faint); font-size: 11px; }
+  .el-delta-label { fill: var(--el-muted); font-size: 13px; letter-spacing: 0; }
+
+  /* --- rules draw themselves in ---------------------------------------- */
+  .el-axis-x { stroke-dasharray: 800; stroke-dashoffset: 800; }
+  .el-axis-y { stroke-dasharray: 400; stroke-dashoffset: 400; }
+  .el.is-visible .el-axis-x { transition: stroke-dashoffset 900ms cubic-bezier(0.2, 0.7, 0.3, 1) 60ms; stroke-dashoffset: 0; }
+  .el.is-visible .el-axis-y { transition: stroke-dashoffset 700ms cubic-bezier(0.2, 0.7, 0.3, 1); stroke-dashoffset: 0; }
+
+  .el-grid,
+  .el-tick { opacity: 0; }
+  .el.is-visible .el-grid,
+  .el.is-visible .el-tick { opacity: 1; transition: opacity 700ms ease 400ms; }
+
+  /* --- the curve -------------------------------------------------------- */
+  .el-curve {
+    stroke: var(--el-trace);
+    stroke-width: var(--fx-trace-width);
+    stroke-linecap: round;
+    stroke-dasharray: 2400;
+    stroke-dashoffset: 2400;
+    filter: drop-shadow(0 0 8px color-mix(in srgb, var(--el-trace) calc(var(--fx-glow-opacity) * 100%), transparent));
+  }
+  .el.is-visible .el-curve {
+    stroke-dashoffset: 0;
+    transition: stroke-dashoffset 1200ms cubic-bezier(0.25, 0.6, 0.3, 1) 200ms;
+  }
+  /* The deformation. `d` is interpolated by the browser; identical command
+   * counts on both paths is what makes this legal. */
+  .el.is-conditioned .el-curve {
+    d: var(--el-d1);
+    transition:
+      stroke-dashoffset 1200ms cubic-bezier(0.25, 0.6, 0.3, 1),
+      d 1150ms cubic-bezier(0.42, 0, 0.25, 1) 140ms;
+  }
+
+  .el-ghost {
+    stroke: var(--el-muted);
+    stroke-width: 1.25;
+    stroke-dasharray: 3 5;
+    opacity: 0;
+  }
+  .el.is-conditioned .el-ghost { opacity: 0.5; transition: opacity 600ms ease 900ms; }
+
+  /* --- the pulse: one flash, one sweep, never again --------------------- */
+  .el-pulse { opacity: 0; }
+  .el-sheet,
+  .el-flash { transform-box: fill-box; transform-origin: center; }
+  .el.is-conditioned .el-pulse { animation: el-strike 620ms ease-out 120ms 1 both; }
+  .el.is-conditioned .el-sheet { animation: el-sheet 620ms ease-out 120ms 1 both; }
+  .el.is-conditioned .el-flash { animation: el-flash 620ms ease-out 120ms 1 both; }
+
+  @keyframes el-strike {
+    0% { opacity: 0; }
+    14% { opacity: 1; }
+    100% { opacity: 0; }
+  }
+  @keyframes el-sheet {
+    0% { transform: scaleX(0.4) scaleY(0.2); }
+    18% { transform: scaleX(2.6) scaleY(1); }
+    100% { transform: scaleX(0.6) scaleY(1); }
+  }
+  @keyframes el-flash {
+    0% { transform: scale(0.15); }
+    100% { transform: scale(1); }
+  }
+
+  /* --- the marker ------------------------------------------------------- */
+  .el-marker { translate: var(--el-x0) var(--el-y0); }
+  .el-marker-core {
+    fill: var(--el-muted);
+    stroke: var(--color-background);
+    stroke-width: 2;
+  }
+  .el-marker-halo { fill: var(--el-accent); opacity: 0; transform-box: fill-box; transform-origin: center; }
+
+  .el.is-conditioned .el-marker {
+    animation: el-settle 1500ms cubic-bezier(0.36, 0, 0.2, 1) 220ms 1 both;
+  }
+  .el.is-conditioned .el-marker-core {
+    fill: var(--el-accent);
+    transition: fill 500ms ease 700ms;
+  }
+  .el.is-conditioned .el-marker-halo {
+    animation: el-halo 900ms ease-out 900ms 1 both;
+  }
+
+  @keyframes el-settle {
+    0%   { translate: var(--el-x0) var(--el-y0); }
+    24%  { translate: var(--el-xc) var(--el-yc); }
+    64%  { translate: var(--el-x1) var(--el-y1o); }
+    82%  { translate: var(--el-x1) var(--el-y1u); }
+    100% { translate: var(--el-x1) var(--el-y1); }
+  }
+  @keyframes el-halo {
+    0% { opacity: 0.5; transform: scale(0.4); }
+    100% { opacity: 0; transform: scale(1.35); }
+  }
+
+  .el-vacancy {
+    stroke: var(--el-muted);
+    stroke-width: 1.25;
+    stroke-dasharray: 2 4;
+    opacity: 0;
+  }
+  .el.is-conditioned .el-vacancy { opacity: 0.55; transition: opacity 500ms ease 1100ms; }
+
+  /* --- labels ----------------------------------------------------------- */
+  .el-label line { stroke: var(--color-rule); stroke-width: 1; stroke-dasharray: 2 4; }
+  .el-label text { fill: var(--el-muted); font-size: 13px; }
+  .el-label-sub { font-size: 10.5px !important; letter-spacing: 0.06em !important; fill: var(--color-text-faint); }
+
+  .el-label-a { opacity: 0; }
+  .el.is-visible .el-label-a { opacity: 1; transition: opacity 600ms ease 900ms; }
+  .el.is-conditioned .el-label-a { opacity: 0.42; transition: opacity 600ms ease 1000ms; }
+
+  .el-label-b { opacity: 0; }
+  .el.is-conditioned .el-label-b { opacity: 1; transition: opacity 700ms ease 1200ms; }
+  /* The one coral on this screen: the state the company actually delivers. */
+  .el.is-conditioned .el-label-b .el-label-main { fill: var(--el-accent); }
+
+  .el-delta { opacity: 0; }
+  .el.is-conditioned .el-delta { opacity: 1; transition: opacity 700ms ease 1400ms; }
+  .el-rail { stroke: var(--color-border); stroke-width: 1; stroke-dasharray: 2 5; }
+  .el-rail-b { stroke: var(--color-primary-soft); }
+  .el-bracket { stroke: var(--color-rule); stroke-width: 1.25; }
+
+  /* --- caption ---------------------------------------------------------- */
+  .el-cap {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-top: 0.75rem;
+    padding-top: 0.6rem;
+    border-top: 1px solid var(--color-border);
+    font-family: var(--font-data);
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    color: var(--color-text-faint);
+  }
+  .el-replay {
+    font-family: var(--font-data);
+    font-size: 0.68rem;
+    letter-spacing: 0.14em;
+    color: var(--color-primary);
+    background: transparent;
+    border: 1px solid var(--color-border);
+    padding: 0.3rem 0.7rem;
+    cursor: pointer;
+  }
+  .el-replay:hover { border-color: var(--color-primary); }
+  .el-replay:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+
+  /* --- static / reduced-motion fallback --------------------------------
+   * The figure resolves to the finished before/after plate: deformed curve,
+   * dashed inherited curve, both wells labelled, marker seated, ΔE shown.
+   * ------------------------------------------------------------------- */
+  .el.no-anim .el-curve,
+  .el.is-static .el-curve {
+    d: var(--el-d1);
+    stroke-dashoffset: 0;
+    transition: none;
+  }
+  .el.no-anim .el-marker,
+  .el.is-static .el-marker {
+    animation: none;
+    translate: var(--el-x1) var(--el-y1);
+  }
+  .el.no-anim .el-marker-core,
+  .el.is-static .el-marker-core { fill: var(--el-accent); transition: none; }
+  .el.no-anim .el-pulse,
+  .el.is-static .el-pulse { display: none; }
+  .el.no-anim .el-axis,
+  .el.is-static .el-axis { stroke-dashoffset: 0; }
+  .el.no-anim .el-grid, .el.is-static .el-grid,
+  .el.no-anim .el-tick, .el.is-static .el-tick,
+  .el.no-anim .el-delta, .el.is-static .el-delta,
+  .el.no-anim .el-label-b, .el.is-static .el-label-b { opacity: 1; }
+  .el.no-anim .el-ghost, .el.is-static .el-ghost { opacity: 0.5; }
+  .el.no-anim .el-vacancy, .el.is-static .el-vacancy { opacity: 0.55; }
+  .el.no-anim .el-label-a, .el.is-static .el-label-a { opacity: 0.42; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .el .el-curve { d: var(--el-d1); stroke-dashoffset: 0; }
+    .el .el-marker { animation: none !important; translate: var(--el-x1) var(--el-y1); }
+    .el .el-marker-core { fill: var(--el-accent); }
+    .el .el-pulse { display: none; }
+    .el .el-axis { stroke-dashoffset: 0; }
+    .el .el-grid, .el .el-tick, .el .el-delta, .el .el-label-b { opacity: 1; }
+    .el .el-ghost { opacity: 0.5; }
+    .el .el-vacancy { opacity: 0.55; }
+    .el .el-label-a { opacity: 0.42; }
+    .el .el-label-b .el-label-main { fill: var(--el-accent); }
+  }
+
+  /* Narrow viewports: a plot this dense cannot be squeezed to 340px and stay
+   * readable — the axis ticks would land under 5px. So the figure keeps a
+   * legible minimum width and pans horizontally inside its own scroller, the
+   * way a technical plot does. The page body never scrolls sideways. */
+  @media (max-width: 760px) {
+    .el { overflow-x: auto; scrollbar-width: thin; overscroll-behavior-x: contain; }
+    .el-svg { min-width: 700px; max-height: none; }
+    .el-axis-label { font-size: 14px; }
+    .el-label text { font-size: 14px; }
+    .el-label-sub { font-size: 12.5px !important; }
+    .el-plate { font-size: 13px; }
+    .el-delta-label { font-size: 15px; }
+    .el-cap::after {
+      content: 'SCROLL →';
+      font-size: 0.62rem;
+      letter-spacing: 0.16em;
+      color: var(--color-primary);
+    }
+  }
+</style>

@@ -1,0 +1,44 @@
+---
+/* MarkLattice — the Multiphasic circular mark, redrawn as code.
+ * The deck's mark is a ring enclosing an irregular dot cluster; read as a
+ * multiphase micrograph. Here the cluster is a real two-phase arrangement:
+ * a dense ordered core (the conditioned state) and looser satellites.
+ *
+ * Reads only semantic tokens. Size is the single required knob. */
+export interface Props {
+  size?: number;
+  ring?: string;
+  nodes?: string;
+  class?: string;
+}
+const {
+  size = 48,
+  ring = 'var(--color-primary)',
+  nodes = 'var(--color-primary)',
+  class: className = '',
+} = Astro.props;
+
+// Two-phase cluster: ordered core lattice + dispersed second phase.
+const core = [
+  [50, 36], [38, 44], [62, 44], [50, 50], [38, 58], [62, 58], [50, 64],
+];
+const satellites = [
+  [30, 33, 2.4], [70, 33, 2.4], [26, 50, 2.0], [74, 50, 2.0],
+  [30, 68, 2.4], [70, 68, 2.4],
+];
+---
+
+<svg
+  class={className}
+  width={size}
+  height={size}
+  viewBox="0 0 100 100"
+  fill="none"
+  role="img"
+  aria-label="Multiphasic mark"
+>
+  <circle cx="50" cy="50" r="46" stroke={ring} stroke-width="5" />
+  <circle cx="50" cy="50" r="36" stroke={ring} stroke-width="2" opacity="0.45" />
+  {core.map(([cx, cy]) => <circle cx={cx} cy={cy} r="4.4" fill={nodes} />)}
+  {satellites.map(([cx, cy, r]) => <circle cx={cx} cy={cy} r={r} fill={nodes} opacity="0.7" />)}
+</svg>

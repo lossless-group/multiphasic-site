@@ -1,0 +1,96 @@
+---
+import DiptychSection from './DiptychSection.astro';
+import DiptychRow from './DiptychRow.astro';
+import type { CollectionEntry } from 'astro:content';
+
+/* ============================================================================
+ * Beat 2 — The gap. This is where the reader learns to read the page.
+ *
+ * A NOTE ON THE FRONTMATTER MAPPING
+ * The beat ships explicit `left` ("What we control") and `right` ("What we
+ * don't") objects. They are placed here by MEANING, not by field name:
+ *
+ *   frontmatter `right` — "What we don't"    → LEFT of the beam. Inherited. Coral.
+ *   frontmatter `left`  — "What we control"  → RIGHT of the beam. Specified. Cyan.
+ *
+ * The site's axis is inherited vs. specified, and it never inverts. Beat 2
+ * teaches it with the strongest possible example: the right column is
+ * manufacturing's OWN achievement — position, feed, temperature, closed-loop —
+ * which is exactly the standard the material has never been held to. Everything
+ * after this beat trades on the reader having learned that reading.
+ * ========================================================================== */
+
+export interface Props {
+  beat: CollectionEntry<'beats'>;
+  body?: any;
+}
+const { beat, body: Body } = Astro.props;
+const d = beat.data as any;
+
+const inherited = d.right ?? { title: 'What we don’t', body: '' };
+const specified = d.left ?? { title: 'What we control', body: '' };
+---
+
+<DiptychSection id={d.slug_id} split={50} size="tall">
+  <DiptychRow seam={false} gap="lg" align="end">
+    <div class="gap-head" slot="past">
+      <p class="dx-eyebrow on-past">{d.eyebrow}</p>
+      <hr class="dx-rule on-past" />
+      <h2 class="dx-h2">{d.title}</h2>
+    </div>
+    <div slot="future">
+      <p class="dx-lede on-future">{d.sub}</p>
+    </div>
+  </DiptychRow>
+
+  <DiptychRow gap="md" rule={true} align="start">
+    <div class="gap-panel" slot="past">
+      <span class="dx-tag on-past">Inherited &middot; cost</span>
+      <h3 class="dx-h3">{inherited.title}</h3>
+      <p class="dx-prose on-past">{inherited.body}</p>
+    </div>
+    <div class="gap-panel" slot="future">
+      <span class="dx-tag on-future">Specified &middot; gain</span>
+      <h3 class="dx-h3">{specified.title}</h3>
+      <p class="dx-prose on-future">{specified.body}</p>
+    </div>
+  </DiptychRow>
+
+  {
+    Body && (
+      <DiptychRow seam={false} gap="none" align="start">
+        <div slot="past">
+          <div class="dx-prose on-past gap-coda">
+            <Body />
+          </div>
+        </div>
+        <div class="dp-blank" slot="future" />
+      </DiptychRow>
+    )
+  }
+</DiptychSection>
+
+<style>
+  .gap-head {
+    text-align: right;
+  }
+  .gap-head .dx-rule {
+    margin-left: auto;
+  }
+  .gap-panel > * + * {
+    margin-top: 0.85rem;
+  }
+  .gap-coda {
+    margin-top: 1.75rem;
+    max-width: 40ch;
+  }
+
+  @media (max-width: 899px) {
+    .gap-head {
+      text-align: left;
+    }
+    .gap-head .dx-rule {
+      margin-left: 0;
+    }
+  }
+</style>

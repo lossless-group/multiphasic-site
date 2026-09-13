@@ -1,0 +1,306 @@
+---
+/* ============================================================================
+ * PhaseField — a quiet EBSD-style orientation map.
+ *
+ * What it shows: a polycrystalline grain map, the way an electron-backscatter
+ * diffraction scan renders one. Two real Voronoi tessellations are computed
+ * at build time from the same seeded site set at two different jitter
+ * amplitudes: an as-received field with irregular, unevenly-sized grains and
+ * a wide spread of orientations, and a conditioned field that is equiaxed
+ * with a much narrower orientation spread. On reveal (and/or hover) the map
+ * cross-fades between them — boundaries reorganise, texture sharpens.
+ *
+ * It sits under beat 2 because "the atomic arrangement the metal actually
+ * ends up in" is exactly the thing this picture is of, and exactly the thing
+ * nobody currently specifies.
+ *
+ * The tessellation is honest: each cell is the true Voronoi region of its
+ * site, obtained by Sutherland–Hodgman clipping the frame against every
+ * perpendicular bisector. Build-time only — the client ships one observer.
+ *
+ * Reads only kebab-case semantic tokens.
+ * ========================================================================== */
+
+export interface Props {
+  /** SVG aspect. The element scales to its container width. */
+  width?: number;
+  height?: number;
+  /** Approximate grain count. Rounded to a grid. */
+  cells?: number;
+  /** Deterministic seed — same seed, same field, every build. */
+  seed?: number;
+  /** Primary grain tint. */
+  tint?: string;
+  /** Second-phase tint. Duotone keeps this quiet enough to sit behind text. */
+  tintAlt?: string;
+  /** Grain-boundary stroke. */
+  boundary?: string;
+  /** What flips the field to its conditioned state. */
+  trigger?: 'hover' | 'reveal' | 'both' | 'none';
+  /** 'static' pins the as-received field and disables the transition. */
+  motion?: 'auto' | 'static';
+  /** Mono corner label, EBSD-plate style. Pass '' to suppress. */
+  label?: string;
+  class?: string;
+}
+
+const {
+  width = 520,
+  height = 380,
+  cells = 44,
+  seed = 20260826,
+  tint = 'var(--color-primary)',
+  tintAlt = 'var(--color-text-muted)',
+  boundary = 'var(--color-rule)',
+  trigger = 'both',
+  motion = 'auto',
+  label = 'EBSD · ORIENTATION MAP',
+  class: className = '',
+} = Astro.props;
+
+/* -------------------------------------------------------------- prng ----- */
+function mulberry32(a: number) {
+  return function () {
+    a |= 0;
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+type Pt = [number, number];
+
+/* ---------------------------------------------------- voronoi by clipping - */
+function clipHalfPlane(poly: Pt[], a: Pt, b: Pt): Pt[] {
+  const mx = (a[0] + b[0]) / 2;
+  const my = (a[1] + b[1]) / 2;
+  const nx = b[0] - a[0];
+  const ny = b[1] - a[1];
+  const sd = (p: Pt) => (p[0] - mx) * nx + (p[1] - my) * ny;
+  const out: Pt[] = [];
+  for (let i = 0; i < poly.length; i++) {
+    const p = poly[i];
+    const q = poly[(i + 1) % poly.length];
+    const dp = sd(p);
+    const dq = sd(q);
+    if (dp <= 0) out.push(p);
+    if ((dp <= 0) !== (dq <= 0)) {
+      const t = dp / (dp - dq);
+      out.push([p[0] + t * (q[0] - p[0]), p[1] + t * (q[1] - p[1])]);
+    }
+  }
+  return out;
+}
+
+const BLEED = 14; // grains run off the edge of the scan, as they do in life
+function tessellate(sites: Pt[]): Pt[][] {
+  const frame: Pt[] = [
+    [-BLEED, -BLEED],
+    [width + BLEED, -BLEED],
+    [width + BLEED, height + BLEED],
+    [-BLEED, height + BLEED],
+  ];
+  return sites.map((s) => {
+    let poly = frame;
+    for (const o of sites) {
+      if (o === s) continue;
+      poly = clipHalfPlane(poly, s, o);
+      if (poly.length === 0) break;
+    }
+    return poly;
+  });
+}
+
+const r2 = (n: number) => Math.round(n * 10) / 10;
+const toD = (poly: Pt[]) =>
+  poly.length ? `M ${poly.map((p) => `${r2(p[0])} ${r2(p[1])}`).join(' L ')} Z` : '';
+
+/* ------------------------------------------------------------- fields ---- */
+const aspect = width / height;
+const rows = Math.max(3, Math.round(Math.sqrt(cells / aspect)));
+const cols = Math.max(3, Math.round(cells / rows));
+const cw = width / cols;
+const ch = height / rows;
+
+function buildField(jitter: number, rand: () => number) {
+  const sites: Pt[] = [];
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      sites.push([
+        (c + 0.5 + (rand() - 0.5) * jitter * 2) * cw,
+        (r + 0.5 + (rand() - 0.5) * jitter * 2) * ch,
+      ]);
+    }
+  }
+  return tessellate(sites);
+}
+
+/* Same seed for both fields so grain n in the as-received map corresponds to
+ * grain n in the conditioned map — the cross-fade reads as reorganisation
+ * rather than as two unrelated pictures. */
+const asReceived = buildField(0.62, mulberry32(seed));
+const conditioned = buildField(0.16, mulberry32(seed));
+
+/* Orientation → tone. As-received: wide spread, the mottled look of an
+ * untextured scan. Conditioned: clustered, the look of a sharp texture. */
+const tone = mulberry32(seed ^ 0x5f3a);
+const grains = asReceived.map((_, i) => {
+  const t = tone();
+  const u = tone();
+  return {
+    a: toD(asReceived[i]),
+    b: toD(conditioned[i] ?? asReceived[i]),
+    phase: u > 0.68 ? 1 : 0,
+    /* As-received: a wide tone spread — the mottle of an untextured scan.
+     * Deliberately kept quiet enough to sit beside body copy. */
+    oa: Math.round((0.04 + t * 0.44) * 100) / 100,
+    /* Conditioned: the spread collapses. Sharp texture, one population. */
+    ob: Math.round((0.17 + t * 0.13) * 100) / 100,
+    /* high-angle boundaries survive conditioning; low-angle ones anneal out */
+    hagb: u > 0.62,
+  };
+});
+
+const uid = `pf-${Math.random().toString(36).slice(2, 8)}`;
+
+const styleVars = [
+  `--pf-tint:${tint}`,
+  `--pf-tint-alt:${tintAlt}`,
+  `--pf-boundary:${boundary}`,
+].join(';');
+---
+
+<figure
+  class:list={['pf', motion === 'static' && 'is-static', className]}
+  data-phase-field
+  data-trigger={trigger}
+  data-motion={motion}
+  style={styleVars}
+>
+  <svg class="pf-svg" viewBox={`0 0 ${width} ${height}`} role="img"
+    aria-label="Electron-backscatter-style grain orientation map. The as-received field shows irregular grains with a wide orientation spread; the conditioned field is equiaxed with a narrow spread.">
+    {/* Grains run off the edge of the scan the way they do in life, so the
+        tessellation is built oversized and clipped back to the frame. */}
+    <defs>
+      <clipPath id={`${uid}-frame`}>
+        <rect x="0" y="0" width={width} height={height} />
+      </clipPath>
+    </defs>
+    <g clip-path={`url(#${uid}-frame)`}>
+    <g class="pf-layer pf-layer-a">
+      {grains.map((g) => (
+        <path class:list={['pf-grain', g.phase === 1 && 'is-alt']} d={g.a} style={`opacity:${g.oa}`} />
+      ))}
+      {grains.map((g) => (
+        <path class:list={['pf-bound', g.hagb && 'is-hagb']} d={g.a} />
+      ))}
+    </g>
+    <g class="pf-layer pf-layer-b">
+      {grains.map((g) => (
+        <path class:list={['pf-grain', g.phase === 1 && 'is-alt']} d={g.b} style={`opacity:${g.ob}`} />
+      ))}
+      {grains.map((g) => (
+        <path class:list={['pf-bound', g.hagb && 'is-hagb']} d={g.b} />
+      ))}
+    </g>
+    </g>
+    <rect class="pf-frame" x="0.5" y="0.5" width={width - 1} height={height - 1} />
+  </svg>
+  {label && (
+    <figcaption class="pf-label">
+      <span>{label}</span>
+      <span class="pf-state" data-pf-state>AS RECEIVED</span>
+    </figcaption>
+  )}
+</figure>
+
+<script>
+  const fields = document.querySelectorAll<HTMLElement>('[data-phase-field]');
+  if (fields.length) {
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    fields.forEach((fig) => {
+      const stateEl = fig.querySelector<HTMLElement>('[data-pf-state]');
+      const setState = (on: boolean) => {
+        fig.classList.toggle('is-conditioned', on);
+        if (stateEl) stateEl.textContent = on ? 'CONDITIONED' : 'AS RECEIVED';
+      };
+
+      if (fig.dataset.motion === 'static') return;
+      const trigger = fig.dataset.trigger || 'both';
+      if (trigger === 'none') return;
+
+      if (trigger === 'hover' || trigger === 'both') {
+        fig.addEventListener('pointerenter', () => setState(true));
+        fig.addEventListener('pointerleave', () => setState(false));
+        fig.addEventListener('focusin', () => setState(true));
+        fig.addEventListener('focusout', () => setState(false));
+      }
+
+      // Reduced motion keeps the as-received field — the state the beat is
+      // about — and skips the reveal flip entirely. Hover still works, it
+      // just resolves instantly (transitions are disabled globally).
+      if (reduce) return;
+
+      if (trigger === 'reveal' || trigger === 'both') {
+        const io = new IntersectionObserver(
+          (entries) => {
+            for (const e of entries) {
+              if (e.intersectionRatio >= 0.5) {
+                setState(true);
+                window.setTimeout(() => setState(false), 2600);
+                io.disconnect();
+              }
+            }
+          },
+          { threshold: [0.5] }
+        );
+        io.observe(fig);
+      }
+    });
+  }
+</script>
+
+<style>
+  .pf { margin: 0; display: block; width: 100%; }
+  .pf-svg { display: block; width: 100%; height: auto; }
+
+  .pf-grain { fill: var(--pf-tint); }
+  .pf-grain.is-alt { fill: var(--pf-tint-alt); }
+
+  .pf-bound {
+    fill: none;
+    stroke: var(--pf-boundary);
+    stroke-width: 0.7;
+    opacity: 0.45;
+  }
+  .pf-bound.is-hagb { stroke-width: 1.4; opacity: 0.8; }
+
+  .pf-frame { fill: none; stroke: var(--color-border); stroke-width: 1; }
+
+  .pf-layer { transition: opacity 900ms cubic-bezier(0.3, 0.7, 0.25, 1); }
+  .pf-layer-b { opacity: 0; }
+  .pf.is-conditioned .pf-layer-a { opacity: 0; }
+  .pf.is-conditioned .pf-layer-b { opacity: 1; }
+  /* Low-angle boundaries anneal out; high-angle ones stay. */
+  .pf.is-conditioned .pf-layer-b .pf-bound { opacity: 0.18; }
+  .pf.is-conditioned .pf-layer-b .pf-bound.is-hagb { opacity: 0.7; }
+
+  .pf-label {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-top: 0.6rem;
+    font-family: var(--font-data);
+    font-size: 0.66rem;
+    letter-spacing: 0.16em;
+    color: var(--color-text-faint);
+  }
+  .pf-state { color: var(--color-primary); }
+  .pf.is-conditioned .pf-state { color: var(--color-primary); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .pf-layer { transition: none; }
+  }
+</style>

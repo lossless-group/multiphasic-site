@@ -1,0 +1,127 @@
+---
+/* GapPanel — beat 2. Two ruled columns: what manufacturing controls, and
+ * what it doesn't. The right column carries PhaseField, because the grain
+ * map IS the uncontrolled variable — putting the picture on that side is
+ * the argument, not decoration. No coral on this screen. */
+import type { CollectionEntry } from 'astro:content';
+import SectionHeader from './SectionHeader.astro';
+import PhaseField from '../flare/PhaseField.astro';
+
+export interface Props { beat: CollectionEntry<'beats'> }
+const { beat } = Astro.props;
+const d = beat.data as any;
+---
+
+<section class="gap" id={d.slug_id}>
+  <SectionHeader index={d.order} eyebrow={d.eyebrow} />
+
+  <h2 class="beat-title">{d.title}</h2>
+  {d.sub && <p class="beat-sub">{d.sub}</p>}
+
+  <div class="gap-cols">
+    <article class="gap-col">
+      <p class="gap-tag">CONTROLLED</p>
+      <h3>{d.left?.title}</h3>
+      <p class="gap-body">{d.left?.body}</p>
+      <ul class="gap-vars" role="list">
+        <li>POSITION</li><li>FEED</li><li>TEMPERATURE</li><li>DWELL</li><li>TOLERANCE</li>
+      </ul>
+    </article>
+
+    <article class="gap-col is-open">
+      <p class="gap-tag is-open">UNCONTROLLED</p>
+      <h3>{d.right?.title}</h3>
+      <p class="gap-body">{d.right?.body}</p>
+      {/* Hover-only. The reveal flip is suppressed here: at this point in the
+          argument the field is the thing nobody specifies, and it should sit
+          still until the reader deliberately asks it what the alternative
+          looks like. */}
+      <PhaseField
+        cells={40}
+        height={300}
+        width={480}
+        trigger="hover"
+        label="EBSD · ORIENTATION MAP"
+        class="gap-field"
+      />
+    </article>
+  </div>
+
+  <div class="beat-note"><slot /></div>
+</section>
+
+<style>
+  .gap-cols {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    margin-top: clamp(2rem, 4vw, 3rem);
+    background: var(--color-border);
+    border-block: 1px solid var(--color-border);
+  }
+  .gap-col {
+    background: var(--color-background);
+    padding: clamp(1.35rem, 3vw, 2.25rem);
+  }
+  .gap-col.is-open { background: var(--color-plate); }
+
+  .gap-tag {
+    font-family: var(--font-data);
+    font-size: 0.63rem;
+    letter-spacing: 0.22em;
+    color: var(--color-text-faint);
+    padding-bottom: 0.7rem;
+    margin-bottom: 1.35rem;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .gap-tag.is-open { color: var(--color-primary); border-bottom-color: var(--color-primary-soft); }
+
+  .gap-col h3 {
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: clamp(1.1rem, 2vw, 1.4rem);
+    letter-spacing: -0.015em;
+    margin-bottom: 0.85rem;
+  }
+  .gap-body {
+    color: var(--color-text-muted);
+    font-size: 0.95rem;
+    line-height: 1.62;
+    max-width: 42ch;
+  }
+
+  .gap-vars {
+    list-style: none;
+    padding: 0;
+    margin: 1.5rem 0 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 1.5rem;
+  }
+  .gap-vars li {
+    font-family: var(--font-data);
+    font-size: 0.68rem;
+    letter-spacing: 0.16em;
+    line-height: 2.1;
+    color: var(--color-text-muted);
+    position: relative;
+    padding-left: 1.1rem;
+  }
+  /* A closed-loop channel indicator, not a checkbox — these are variables
+   * under measurement, not items on a list. */
+  .gap-vars li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.95em;
+    width: 0.65rem;
+    height: 1px;
+    background: var(--color-primary);
+  }
+
+  .gap-field { margin-top: 1.6rem; }
+
+  @media (max-width: 820px) {
+    .gap-cols { grid-template-columns: 1fr; }
+  }
+</style>

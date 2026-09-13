@@ -1,0 +1,299 @@
+---
+import BaseThemeLayout from '../../layouts/BaseThemeLayout.astro';
+import Wordmark from '../../components/basics/Wordmark.astro';
+import MarkLattice from '../../components/basics/MarkLattice.astro';
+import ModeToggle from '../../components/ui/ModeToggle.astro';
+
+/* Brand Kit — stakeholder-facing.
+ *
+ * The theme files use plain attribute selectors ([data-theme][data-mode]), not
+ * html-scoped ones, so a panel can declare its own theme+mode and the semantic
+ * tokens resolve inside it. That lets this page show all 3 themes x 3 modes
+ * simultaneously instead of making a reviewer toggle nine times. */
+const themes = [
+  { slug: 'instrument', name: 'Phase Diagram', stance: 'Closest to the deck' },
+  { slug: 'lattice', name: 'Lattice', stance: 'Furthest from the deck' },
+  { slug: 'diptych', name: 'Before the Beam', stance: 'Reinterprets the deck' },
+] as const;
+
+const modes = ['light', 'dark', 'vibrant'] as const;
+
+const swatches = [
+  '--color-background',
+  '--color-surface',
+  '--color-surface-raised',
+  '--color-primary',
+  '--color-accent',
+  '--color-text',
+  '--color-text-muted',
+  '--color-border',
+];
+---
+
+<BaseThemeLayout title="Multiphasic — Brand Kit" theme="instrument" mode="dark">
+  <header class="bk-chrome">
+    <Wordmark size={30} tagline />
+    <div class="bk-nav">
+      <a href="/">Directions</a>
+      <a href="/design-system">Design system</a>
+      <ModeToggle />
+    </div>
+  </header>
+
+  <main class="bk">
+    <p class="eyebrow">BRAND KIT</p>
+    <h1>Multiphasic — brand essentials</h1>
+    <p class="lede">
+      There is no legacy brand guideline. What exists is a latent identity in the source
+      deck: a navy ground, a coral rule, cyan category labels, a wide letterspaced
+      wordmark, and a circular lattice mark. Everything below either preserves that or
+      argues with it deliberately.
+    </p>
+
+    <section class="bk-section">
+      <h2>The mark</h2>
+      <p class="note">
+        Redrawn as code, not exported as a raster. A ring enclosing a two-phase cluster —
+        a dense ordered core (the conditioned state) with dispersed satellites. Scales to
+        any size and takes the current theme's colors.
+      </p>
+      <div class="mark-row">
+        <div class="mark-cell"><MarkLattice size={96} /><code>96</code></div>
+        <div class="mark-cell"><MarkLattice size={48} /><code>48</code></div>
+        <div class="mark-cell"><MarkLattice size={24} /><code>24</code></div>
+        <div class="mark-cell"><MarkLattice size={16} /><code>16</code></div>
+      </div>
+    </section>
+
+    <section class="bk-section">
+      <h2>The lockup</h2>
+      <div class="lockup-row">
+        <div class="lockup-cell"><Wordmark size={44} tagline /></div>
+        <div class="lockup-cell"><Wordmark size={28} /></div>
+        <div class="lockup-cell"><Wordmark size={40} tagline stacked /></div>
+      </div>
+    </section>
+
+    <section class="bk-section">
+      <h2>Palettes — three directions &times; three modes</h2>
+      <p class="note">
+        Each panel declares its own <code>data-theme</code> and <code>data-mode</code>, so
+        these are the real resolved token values, not a mock-up of them. Vibrant is
+        dark-based by policy in all three directions.
+      </p>
+
+      {
+        themes.map((t) => (
+          <div class="theme-block">
+            <div class="theme-head">
+              <h3>{t.name}</h3>
+              <span class="stance">{t.stance}</span>
+              <code>data-theme="{t.slug}"</code>
+            </div>
+            <div class="mode-grid">
+              {modes.map((m) => (
+                <article class="mode-panel" data-theme={t.slug} data-mode={m}>
+                  <header class="mode-panel-head">
+                    <span class="mode-name">{m}</span>
+                    <MarkLattice size={20} />
+                  </header>
+                  <ul class="swatches">
+                    {swatches.map((token) => (
+                      <li>
+                        <span class="chip" style={`background: var(${token})`} />
+                        <code>{token.replace('--color-', '')}</code>
+                      </li>
+                    ))}
+                  </ul>
+                  <p class="specimen-display">Materials programming</p>
+                  <p class="specimen-body">
+                    Tuned ultrafast laser excitation, applied during manufacture.
+                  </p>
+                  <p class="specimen-data">30% · 2X · 50–90%</p>
+                </article>
+              ))}
+            </div>
+          </div>
+        ))
+      }
+    </section>
+
+    <section class="bk-section">
+      <h2>Type roles</h2>
+      <dl class="type-roles">
+        <dt><code>--font-display</code></dt>
+        <dd>Headlines and the wordmark. Carries the deck's wide geometric proportions.</dd>
+        <dt><code>--font-body</code></dt>
+        <dd>Running argument. Quiet by comparison to display.</dd>
+        <dt><code>--font-data</code></dt>
+        <dd>
+          Every number, unit, axis tick and label. <strong>Numbers are never set in the
+          body face.</strong>
+        </dd>
+        <dt><code>--font-eyebrow</code></dt>
+        <dd>Letterspaced ALL-CAPS category labels, inherited from the deck.</dd>
+      </dl>
+    </section>
+  </main>
+</BaseThemeLayout>
+
+<style>
+  .bk-chrome {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    padding: 1.25rem clamp(1.5rem, 5vw, 4rem);
+    border-bottom: 1px solid var(--color-border);
+  }
+  .bk-nav { display: flex; align-items: center; gap: 1.25rem; }
+  .bk-nav a {
+    font-family: var(--font-data);
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    text-decoration: none;
+  }
+  .bk-nav a:hover { color: var(--color-primary); }
+
+  .bk {
+    max-width: 76rem;
+    margin: 0 auto;
+    padding: clamp(2.5rem, 6vw, 4.5rem) clamp(1.5rem, 5vw, 4rem) 6rem;
+  }
+  .eyebrow {
+    font-family: var(--font-eyebrow);
+    font-size: 0.72rem;
+    letter-spacing: 0.18em;
+    color: var(--color-primary);
+    margin-bottom: 1rem;
+  }
+  h1 {
+    font-family: var(--font-display);
+    font-size: clamp(1.9rem, 4.5vw, 2.9rem);
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    margin-bottom: 1rem;
+  }
+  .lede {
+    max-width: 46rem;
+    color: var(--color-text-muted);
+    line-height: 1.6;
+    margin-bottom: 1rem;
+  }
+  .bk-section { margin-top: 4rem; }
+  .bk-section h2 {
+    font-family: var(--font-display);
+    font-size: 1.35rem;
+    font-weight: 500;
+    padding-bottom: 0.6rem;
+    border-bottom: 1px solid var(--color-border);
+    margin-bottom: 1.25rem;
+  }
+  .note {
+    max-width: 46rem;
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+    line-height: 1.6;
+    margin-bottom: 1.5rem;
+  }
+  code {
+    font-family: var(--font-data);
+    font-size: 0.75rem;
+    color: var(--color-text-faint);
+  }
+
+  .mark-row, .lockup-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 2.5rem;
+    padding: 2rem;
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+  }
+  .mark-cell { display: flex; flex-direction: column; align-items: center; gap: 0.6rem; }
+  .lockup-row { align-items: center; }
+
+  .theme-block { margin-bottom: 2.5rem; }
+  .theme-head {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 0.9rem;
+    margin-bottom: 0.9rem;
+  }
+  .theme-head h3 {
+    font-family: var(--font-display);
+    font-size: 1.05rem;
+    font-weight: 500;
+  }
+  .stance {
+    font-family: var(--font-eyebrow);
+    font-size: 0.64rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-accent);
+  }
+  .mode-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+    gap: 1rem;
+  }
+  .mode-panel {
+    /* These panels intentionally paint their own theme's ground. */
+    background: var(--color-background);
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+    padding: 1.1rem;
+  }
+  .mode-panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.9rem;
+  }
+  .mode-name {
+    font-family: var(--font-eyebrow);
+    font-size: 0.66rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--color-primary);
+  }
+  .swatches { list-style: none; padding: 0; margin: 0 0 1rem; display: grid; gap: 0.3rem; }
+  .swatches li { display: flex; align-items: center; gap: 0.5rem; }
+  .chip {
+    width: 1.15rem;
+    height: 1.15rem;
+    flex: none;
+    border: 1px solid var(--color-border);
+  }
+  .swatches code { color: var(--color-text-muted); }
+  .specimen-display {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    line-height: 1.15;
+    margin-bottom: 0.35rem;
+  }
+  .specimen-body {
+    font-family: var(--font-body);
+    font-size: 0.8rem;
+    line-height: 1.5;
+    color: var(--color-text-muted);
+    margin-bottom: 0.35rem;
+  }
+  .specimen-data {
+    font-family: var(--font-data);
+    font-size: 0.85rem;
+    color: var(--color-accent);
+  }
+
+  .type-roles { display: grid; gap: 0.4rem; }
+  .type-roles dt { margin-top: 0.75rem; }
+  .type-roles dd {
+    margin: 0;
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+    line-height: 1.55;
+  }
+</style>

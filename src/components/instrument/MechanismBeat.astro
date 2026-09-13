@@ -1,0 +1,126 @@
+---
+/* MechanismBeat — beat 5. The centrepiece.
+ *
+ * METASTATE gets the widest plate on the page and the only large diagram.
+ * The three steps (EXCITE / GUIDE / HOLD) run beneath the figure as a
+ * sequence, because they are one — the note field already numbers them.
+ * The single coral of this screen lives inside EnergyLandscape, on the
+ * marker that settles into the deep well. */
+import type { CollectionEntry } from 'astro:content';
+import SectionHeader from './SectionHeader.astro';
+import EnergyLandscape from '../flare/EnergyLandscape.astro';
+
+export interface Props { beat: CollectionEntry<'beats'> }
+const { beat } = Astro.props;
+const d = beat.data as any;
+const items: { label: string; body?: string; note?: string }[] = d.items ?? [];
+---
+
+<section class="mech" id={d.slug_id}>
+  <SectionHeader index={d.order} eyebrow={d.eyebrow} />
+
+  <div class="mech-head">
+    <div>
+      <h2 class="mech-title">{d.title}</h2>
+      {d.sub && <p class="mech-sub">{d.sub}</p>}
+    </div>
+    {d.kicker && <p class="mech-kicker">{d.kicker}</p>}
+  </div>
+
+  <div class="mech-plate">
+    <EnergyLandscape height={470} />
+  </div>
+
+  <ol class="mech-steps" role="list">
+    {items.map((it) => (
+      <li class="mech-step">
+        <span class="mech-step-n">{it.note}</span>
+        <h3 class="mech-step-label">{it.label}</h3>
+        <p class="mech-step-body">{it.body}</p>
+      </li>
+    ))}
+  </ol>
+
+  <div class="beat-note"><slot /></div>
+</section>
+
+<style>
+  .mech-head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: clamp(1.5rem, 4vw, 3.5rem);
+    align-items: end;
+  }
+  .mech-title {
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: clamp(2.6rem, 8vw, 5.2rem);
+    line-height: 0.95;
+    letter-spacing: 0.02em;
+  }
+  .mech-sub {
+    margin-top: 1rem;
+    font-size: clamp(1rem, 1.7vw, 1.2rem);
+    line-height: 1.5;
+    color: var(--color-text-muted);
+    max-width: 34ch;
+  }
+  .mech-kicker {
+    font-family: var(--font-data);
+    font-size: clamp(0.78rem, 1.4vw, 0.9rem);
+    line-height: 1.75;
+    color: var(--color-text-muted);
+    padding-left: 1.35rem;
+    border-left: 1px solid var(--color-primary-soft);
+    max-width: 48ch;
+  }
+
+  .mech-plate {
+    margin-top: clamp(2.25rem, 5vw, 3.5rem);
+    padding: clamp(1rem, 3vw, 2rem) clamp(0.75rem, 2.5vw, 1.75rem);
+    border: 1px solid var(--color-border);
+    background:
+      radial-gradient(120% 90% at 50% 0%, var(--fx-bloom), transparent 70%),
+      var(--color-plate);
+  }
+
+  .mech-steps {
+    list-style: none;
+    padding: 0;
+    margin: clamp(2rem, 4vw, 3rem) 0 0;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--color-border);
+    border-block: 1px solid var(--color-border);
+  }
+  .mech-step {
+    background: var(--color-background);
+    padding: clamp(1.25rem, 2.5vw, 1.9rem);
+  }
+  .mech-step-n {
+    font-family: var(--font-data);
+    font-size: 0.68rem;
+    letter-spacing: 0.2em;
+    color: var(--color-text-faint);
+  }
+  .mech-step-label {
+    font-family: var(--font-data);
+    font-weight: 500;
+    font-size: 0.88rem;
+    letter-spacing: 0.24em;
+    color: var(--color-primary);
+    margin: 0.85rem 0 0.75rem;
+  }
+  .mech-step-body {
+    color: var(--color-text-muted);
+    font-size: 0.92rem;
+    line-height: 1.62;
+  }
+
+  @media (max-width: 900px) {
+    .mech-head { grid-template-columns: 1fr; align-items: start; }
+    .mech-kicker { padding-left: 1rem; }
+    .mech-steps { grid-template-columns: 1fr; }
+  }
+</style>

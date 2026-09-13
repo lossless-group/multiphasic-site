@@ -1,0 +1,50 @@
+---
+export interface Props {
+  title?: string;
+  description?: string;
+  theme?: 'instrument' | 'lattice' | 'diptych';
+  mode?: 'light' | 'dark' | 'vibrant';
+}
+
+const {
+  title = 'Multiphasic — material state solutions',
+  description = 'Multiphasic applies tuned ultrafast laser excitation during manufacture to guide the atomic lattice of metal parts into superior metastable states.',
+  theme = 'instrument',
+  mode = 'dark',
+} = Astro.props;
+---
+
+<!doctype html>
+<html lang="en" class={`theme-${theme} theme-transition`} data-theme={theme} data-mode={mode}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    {/* Site stays out of the index until the operator lifts it — source deck is CONFIDENTIAL. */}
+    <meta name="robots" content="noindex, nofollow" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;700&family=Inter:wght@300;400;500;600&family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,600;9..144,700&display=swap"
+    />
+    <script is:inline>
+      // Pre-paint theme/mode application to avoid FOUC. The switcher modules
+      // re-apply on DOMContentLoaded; this just wins the first frame.
+      (function () {
+        try {
+          var m = localStorage.getItem('mode');
+          if (m === 'light' || m === 'dark' || m === 'vibrant') {
+            document.documentElement.setAttribute('data-mode', m);
+            document.documentElement.classList.toggle('dark', m !== 'light');
+          }
+        } catch (e) {}
+      })();
+    </script>
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>

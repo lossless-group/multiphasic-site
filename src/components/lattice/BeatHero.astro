@@ -1,0 +1,53 @@
+---
+// Beat 1 — Thesis.
+//
+// Hero line: `alt_titles[0]` — "Program the state of matter." Four words, an
+// imperative, and the only one of the five candidates that claims the frontier
+// rather than explaining it. This direction is the manifesto; it opens with a
+// verb, not a comparison.
+//
+// The frontmatter `sub` and the markdown body are deliberately unrendered here.
+// The kicker alone states the gap, and the gap is the whole page.
+
+export interface Props {
+  data: Record<string, any>;
+}
+const { data } = Astro.props;
+const headline: string = data.alt_titles?.[0] ?? data.title;
+---
+
+<div class="hero">
+  <h1 class="lx-display-xl lx-rise" id="beat-thesis">{headline}</h1>
+  {data.kicker && <p class="lx-lede lx-rise">{data.kicker}</p>}
+  <div class="hero-foot lx-rise">
+    {data.cta_href && (
+      <a class="lx-cta" href={data.cta_href}>{data.cta_label ?? 'Get in touch'}</a>
+    )}
+    <span class="hero-hint">SCROLL — THE FRONT FOLLOWS</span>
+  </div>
+</div>
+
+<style>
+  .hero {
+    display: flex;
+    flex-direction: column;
+    gap: clamp(1.5rem, 3vw, 2.5rem);
+    max-width: 22ch;
+  }
+  .hero :global(.lx-lede) {
+    max-width: 34ch;
+  }
+  .hero-foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1.5rem 2rem;
+    margin-top: clamp(0.5rem, 2vw, 1.5rem);
+  }
+  .hero-hint {
+    font-family: var(--font-data);
+    font-size: 0.625rem;
+    letter-spacing: 0.24em;
+    color: var(--color-text-faint);
+  }
+</style>

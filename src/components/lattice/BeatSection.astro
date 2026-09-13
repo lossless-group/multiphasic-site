@@ -1,0 +1,59 @@
+---
+// Shared shell for every beat. Each section is a full-bleed held moment.
+//
+// The section transition is an excitation event: on first intersection a front
+// sweeps the section's top edge and the content resolves behind it — the same
+// gesture the lattice canvas is making underneath, at a different scale.
+//
+// Shared `.lx-*` classes are defined once in src/pages/lattice.astro so the
+// reveal can reach slotted content (Astro scoping cannot cross a <slot/>).
+
+export interface Props {
+  id?: string;
+  eyebrow?: string;
+  /** Hold the full viewport — reserved for the beats that should land alone. */
+  full?: boolean;
+  /** 'void' = bare ground. 'band' = a translucent supporting-surface plate. */
+  tone?: 'void' | 'band';
+  labelledby?: string;
+  class?: string;
+}
+
+const { id, eyebrow, full = false, tone = 'void', labelledby, class: className = '' } = Astro.props;
+---
+
+<section
+  id={id}
+  class:list={['lx-beat', full && 'is-full', tone === 'band' && 'is-band', className]}
+  data-lx-beat
+  aria-labelledby={labelledby}
+>
+  <span class="lx-beat-front" aria-hidden="true"></span>
+  <div class="lx-beat-inner">
+    {eyebrow && <p class="lx-eyebrow lx-rise">{eyebrow}</p>}
+    <slot />
+  </div>
+</section>
+
+<script>
+  // One observer for every beat on the page. Fires once per section.
+  const beats = document.querySelectorAll<HTMLElement>('[data-lx-beat]');
+  if (beats.length) {
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduced) {
+      beats.forEach((b) => b.classList.add('is-lit'));
+    } else {
+      const io = new IntersectionObserver(
+        (entries) => {
+          for (const e of entries) {
+            if (!e.isIntersecting) continue;
+            e.target.classList.add('is-lit');
+            io.unobserve(e.target);
+          }
+        },
+        { threshold: 0.12, rootMargin: '0px 0px -8% 0px' }
+      );
+      beats.forEach((b) => io.observe(b));
+    }
+  }
+</script>

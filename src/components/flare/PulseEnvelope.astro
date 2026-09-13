@@ -1,0 +1,169 @@
+---
+// ============================================================================
+// PulseEnvelope — the section divider, and the replacement for the deck's
+// coral rule.
+//
+// A femtosecond pulse: a carrier wave enclosed in a Gaussian envelope. The
+// packet is what METASTATE actually delivers into the lattice, so the divider
+// between two sections is literally the thing that separates before from after.
+//
+// SVG. The packet is a fixed-width element that sweeps along a hairline
+// baseline via a compositor-only transform — no path re-generation at runtime,
+// no JS at all. Shape is computed once at build time.
+//
+// REDUCED MOTION: the packet parks mid-span and stops. The pulse shape is the
+// meaning; the travel is only the ornament, so the static state still reads.
+//
+// Reads ONLY kebab-case semantic tokens.
+// ============================================================================
+
+export interface Props {
+  /** Packet width in CSS px — how long the pulse looks. */
+  packet?: number;
+  /** Divider height in CSS px. Sets the carrier amplitude. */
+  height?: number;
+  /** Oscillations of the carrier inside the envelope. */
+  cycles?: number;
+  /** Envelope tightness. Higher = shorter pulse (more femto, less pico). */
+  tightness?: number;
+  /** Carrier stroke. Any semantic token or CSS color. */
+  color?: string;
+  /** Draw the faint Gaussian envelope around the carrier. */
+  envelope?: boolean;
+  /** Seconds for one full traverse. */
+  speed?: number;
+  /** 'sweep' travels the packet; 'none' parks it (same as reduced-motion). */
+  motion?: 'sweep' | 'none';
+  /** Baseline hairline visibility. */
+  baseline?: boolean;
+  /** Stagger multiple dividers on one page so they don't march in lockstep. */
+  delay?: number;
+  class?: string;
+}
+
+const {
+  packet = 420,
+  height = 34,
+  cycles = 9,
+  tightness = 5.2,
+  color = 'var(--color-primary)',
+  envelope = true,
+  speed = 9,
+  motion = 'sweep',
+  baseline = true,
+  delay = 0,
+  class: className = '',
+} = Astro.props;
+
+// --- shape, computed once ---------------------------------------------------
+const W = packet;
+const H = height;
+const mid = H / 2;
+const amp = H * 0.42;
+const centre = W / 2;
+const sigma = W / (2 * tightness);
+const SAMPLES = 260;
+
+const gauss = (x: number) => Math.exp(-((x - centre) ** 2) / (2 * sigma * sigma));
+
+const carrier: string[] = [];
+const upper: string[] = [];
+const lower: string[] = [];
+for (let i = 0; i <= SAMPLES; i++) {
+  const x = (i / SAMPLES) * W;
+  const g = gauss(x);
+  const y = mid - amp * g * Math.sin((2 * Math.PI * cycles * (x - centre)) / W);
+  carrier.push(`${i === 0 ? 'M' : 'L'}${x.toFixed(2)} ${y.toFixed(2)}`);
+  upper.push(`${i === 0 ? 'M' : 'L'}${x.toFixed(2)} ${(mid - amp * g).toFixed(2)}`);
+  lower.push(`${i === 0 ? 'M' : 'L'}${x.toFixed(2)} ${(mid + amp * g).toFixed(2)}`);
+}
+const carrierD = carrier.join(' ');
+const upperD = upper.join(' ');
+const lowerD = lower.join(' ');
+
+const style = [
+  `--pe-h:${H}px`,
+  `--pe-w:${W}px`,
+  `--pe-color:${color}`,
+  `--pe-speed:${speed}s`,
+  `--pe-delay:${-delay}s`,
+].join(';');
+---
+
+<div
+  class:list={['pulse-envelope', motion === 'none' && 'is-parked', className]}
+  style={style}
+  aria-hidden="true"
+>
+  {baseline && <span class="pe-baseline"></span>}
+  <svg class="pe-packet" width={W} height={H} viewBox={`0 0 ${W} ${H}`} fill="none">
+    {envelope && (
+      <>
+        <path class="pe-env" d={upperD} vector-effect="non-scaling-stroke" />
+        <path class="pe-env" d={lowerD} vector-effect="non-scaling-stroke" />
+      </>
+    )}
+    <path class="pe-carrier" d={carrierD} vector-effect="non-scaling-stroke" />
+  </svg>
+</div>
+
+<style>
+  .pulse-envelope {
+    position: relative;
+    container-type: inline-size;
+    width: 100%;
+    height: var(--pe-h);
+    overflow: hidden;
+    isolation: isolate;
+  }
+
+  .pe-baseline {
+    position: absolute;
+    inset-inline: 0;
+    top: 50%;
+    height: 1px;
+    background: var(--fx-hairline, currentColor);
+  }
+
+  .pe-packet {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: var(--pe-w);
+    height: var(--pe-h);
+    transform: translateX(-100%);
+    animation: pe-sweep var(--pe-speed) linear infinite;
+    animation-delay: var(--pe-delay);
+    will-change: transform;
+  }
+
+  .pe-carrier {
+    stroke: var(--pe-color);
+    stroke-width: 1.25;
+    stroke-linecap: round;
+  }
+  .pe-env {
+    stroke: var(--pe-color);
+    stroke-width: 1;
+    stroke-dasharray: 2 5;
+    opacity: 0.32;
+  }
+
+  @keyframes pe-sweep {
+    from { transform: translateX(-100%); }
+    to   { transform: translateX(100cqw); }
+  }
+
+  /* Parked: the packet sits mid-span, shape intact, no travel. */
+  .pulse-envelope.is-parked .pe-packet {
+    animation: none;
+    transform: translateX(calc(50cqw - var(--pe-w) / 2));
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .pe-packet {
+      animation: none;
+      transform: translateX(calc(50cqw - var(--pe-w) / 2));
+    }
+  }
+</style>

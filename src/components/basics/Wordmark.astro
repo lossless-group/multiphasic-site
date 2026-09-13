@@ -1,0 +1,53 @@
+---
+import MarkLattice from './MarkLattice.astro';
+
+/* Wordmark — mark + MULTIPHASIC + optional "material state solutions" lockup.
+ * The deck sets the wordmark wide and letterspaced; --font-display carries
+ * those proportions. Tagline is optional so chrome can run tight. */
+export interface Props {
+  size?: number;
+  tagline?: boolean;
+  stacked?: boolean;
+  class?: string;
+}
+const { size = 32, tagline = false, stacked = false, class: className = '' } = Astro.props;
+---
+
+<a href="/" class:list={['wordmark', stacked && 'is-stacked', className]} aria-label="Multiphasic — home">
+  <MarkLattice size={size} />
+  <span class="wm-text">
+    <span class="wm-name" style={`font-size:${size * 0.62}px`}>MULTIPHASIC</span>
+    {tagline && <span class="wm-tagline" style={`font-size:${size * 0.3}px`}>material state solutions</span>}
+  </span>
+</a>
+
+<style>
+  .wordmark {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.7em;
+    text-decoration: none;
+    color: var(--color-text);
+  }
+  .wordmark.is-stacked {
+    flex-direction: column;
+    gap: 0.9em;
+    text-align: center;
+  }
+  .wm-text { display: flex; flex-direction: column; gap: 0.25em; }
+  .is-stacked .wm-text { align-items: center; }
+  .wm-name {
+    font-family: var(--font-display);
+    font-weight: 600;
+    letter-spacing: 0.22em;
+    line-height: 1;
+    color: var(--color-text);
+  }
+  .wm-tagline {
+    font-family: var(--font-body);
+    font-weight: 300;
+    letter-spacing: 0.08em;
+    line-height: 1;
+    color: var(--color-text-muted);
+  }
+</style>

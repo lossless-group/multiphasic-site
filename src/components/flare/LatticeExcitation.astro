@@ -1,0 +1,501 @@
+---
+// ============================================================================
+// LatticeExcitation — the Direction B centerpiece.
+//
+// A close-packed atomic lattice that begins DEFECTIVE and anneals into order
+// behind a travelling excitation front. The defect -> order transition is the
+// company's value proposition rendered as ambient UI: material state stops
+// being inherited and starts being specified.
+//
+// What is actually simulated on the disordered side (physics-feel matters):
+//   · varied bond lengths      — per-node positional jitter, so no two bonds
+//                                in the un-annealed region are the same length
+//   · an edge dislocation      — the classic (b/2pi)*atan2 displacement field,
+//                                which produces a real extra half-plane
+//   · a mismatched grain       — nodes past a boundary line are rotated ~11deg
+//                                about a pivot, so the boundary is visible as
+//                                a seam of broken coordination
+//   · vacancies                — ~5% of sites are simply empty, and their
+//                                bonds are missing with them
+// Behind the front all four vanish: perfect periodicity, brighter/denser
+// rendering, bonds across the healed grain boundary reconnect, vacancies fill.
+//
+// TECH: Canvas 2D. Three.js was considered and rejected — the lattice is a
+// single crystallographic plane, depth adds no meaning here, and a 2D canvas
+// costs ~0 KB against three's ~150 KB for a component that must run behind an
+// entire page.
+//
+// PERF: node count is hard-capped (spacing is widened until the cap holds),
+// devicePixelRatio is capped at 2, the loop is gated on IntersectionObserver
+// + document visibility, and redraws are throttled to ~30fps (ambient thermal
+// jitter reads fine at 30, and this is background).
+//
+// REDUCED MOTION: no rAF, no scroll listener. One static frame of the fully
+// ordered lattice — the end state, which is the point being made.
+//
+// Reads ONLY kebab-case semantic tokens (--fx-lattice-*, --fx-lattice-blend).
+// ============================================================================
+
+export interface Props {
+  /** 'scroll' = document scroll drives the front (page background use).
+   *  'element' = this element's own traversal of the viewport drives it.
+   *  'manual' = fixed at `progress`, settable via el.latticeSetProgress(p). */
+  source?: 'scroll' | 'element' | 'manual';
+  /** Starting/fixed front position, 0 (all defective) to 1 (all annealed). */
+  progress?: number;
+  /** Pin to the viewport behind the whole page, or fill the parent box. */
+  fixed?: boolean;
+  /** Target lattice constant in CSS px. Widened automatically to hold maxNodes. */
+  spacing?: number;
+  /** Hard cap on simulated atoms. */
+  maxNodes?: number;
+  /** How badly the un-annealed side is disordered, 0–1. */
+  disorder?: number;
+  /** Front tilt in degrees. 0 = a vertical front sweeping left to right. */
+  tilt?: number;
+  /** Width of the transition zone in px — the annealing front's thickness. */
+  feather?: number;
+  /** Deterministic layout seed. Same seed = same defects. */
+  seed?: number;
+  class?: string;
+}
+
+const {
+  source = 'scroll',
+  progress = 0,
+  fixed = false,
+  spacing = 62,
+  maxNodes = 620,
+  disorder = 1,
+  tilt = -11,
+  feather = 190,
+  seed = 20260826,
+  class: className = '',
+} = Astro.props;
+---
+
+<div
+  class:list={['lx-excitation', fixed && 'is-fixed', className]}
+  data-lattice-excitation
+  data-source={source}
+  data-progress={String(progress)}
+  data-spacing={String(spacing)}
+  data-max-nodes={String(maxNodes)}
+  data-disorder={String(disorder)}
+  data-tilt={String(tilt)}
+  data-feather={String(feather)}
+  data-seed={String(seed)}
+  aria-hidden="true"
+>
+  <canvas></canvas>
+</div>
+
+<style>
+  .lx-excitation {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+  }
+  .lx-excitation.is-fixed {
+    position: fixed;
+    z-index: 0;
+  }
+  .lx-excitation canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    mix-blend-mode: var(--fx-lattice-blend, normal);
+    opacity: var(--fx-lattice-alpha, 1);
+  }
+</style>
+
+<script>
+  type Node = {
+    ox: number; oy: number;   // ordered (annealed) position
+    dx: number; dy: number;   // defective position
+    ph: number;               // thermal phase
+    vac: boolean;             // vacancy — absent until the front heals it
+    grain: boolean;           // sits in the mismatched grain
+  };
+
+  const CSS_VARS = [
+    '--fx-lattice-bond',
+    '--fx-lattice-bond-ordered',
+    '--fx-lattice-node',
+    '--fx-lattice-node-ordered',
+    '--fx-lattice-front',
+    '--fx-lattice-front-2',
+  ] as const;
+
+  const FALLBACK: Record<string, string> = {
+    '--fx-lattice-bond': 'rgba(126,116,168,0.30)',
+    '--fx-lattice-bond-ordered': 'rgba(150,214,255,0.46)',
+    '--fx-lattice-node': 'rgba(168,158,208,0.55)',
+    '--fx-lattice-node-ordered': 'rgba(191,239,255,0.95)',
+    '--fx-lattice-front': 'rgba(255,61,203,0.55)',
+    '--fx-lattice-front-2': 'rgba(123,92,255,0.30)',
+  };
+
+  /** Mulberry32 — small, fast, deterministic. Same seed, same defects. */
+  function rng(seed: number) {
+    let a = seed >>> 0;
+    return () => {
+      a |= 0; a = (a + 0x6d2b79f5) | 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  const smooth = (t: number) => t * t * (3 - 2 * t);
+  const clamp01 = (v: number) => (v < 0 ? 0 : v > 1 ? 1 : v);
+
+  /** Parse an rgba()/rgb() string once so per-frame lerps are pure math. */
+  function parseRGBA(s: string): [number, number, number, number] {
+    const m = s.trim().match(/-?[\d.]+/g);
+    if (!m || m.length < 3) return [255, 255, 255, 1];
+    return [+m[0], +m[1], +m[2], m.length > 3 ? +m[3] : 1];
+  }
+  type RGBA = [number, number, number, number];
+  const mix = (a: RGBA, b: RGBA, t: number) =>
+    `rgba(${Math.round(a[0] + (b[0] - a[0]) * t)},${Math.round(
+      a[1] + (b[1] - a[1]) * t
+    )},${Math.round(a[2] + (b[2] - a[2]) * t)},${(a[3] + (b[3] - a[3]) * t).toFixed(3)})`;
+  /** Same color, alpha scaled — used to fade the front band's gradient stops. */
+  const fade = (c: RGBA, k: number) =>
+    `rgba(${c[0]},${c[1]},${c[2]},${(c[3] * k).toFixed(3)})`;
+
+  function init(root: HTMLElement) {
+    const found = root.querySelector('canvas') as HTMLCanvasElement | null;
+    if (!found) return;
+    const ctx = found.getContext('2d', { alpha: true });
+    if (!ctx) return;
+    const canvas = found;
+
+    const num = (k: string, d: number) => {
+      const v = parseFloat(root.dataset[k] ?? '');
+      return Number.isFinite(v) ? v : d;
+    };
+    const source = root.dataset.source || 'scroll';
+    const disorder = num('disorder', 1);
+    const tilt = (num('tilt', -11) * Math.PI) / 180;
+    const featherBase = num('feather', 190);
+    const seed = num('seed', 20260826);
+    const maxNodes = num('maxNodes', 620);
+    const spacingWanted = num('spacing', 62);
+
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    let W = 0, H = 0, dpr = 1;
+    let nodes: Node[] = [];
+    let bonds: Array<[number, number]> = [];
+    let spacing = spacingWanted;
+    let uMin = 0, uSpan = 1, feather = featherBase;
+    let colors: Record<string, [number, number, number, number]> = {};
+
+    let target = reduced ? 1 : clamp01(num('progress', 0));
+    let shown = target;
+    let t0 = performance.now();
+    let last = 0;
+    let running = false;
+    let visible = true;
+    let raf = 0;
+
+    function readColors() {
+      const cs = getComputedStyle(document.documentElement);
+      const next: typeof colors = {};
+      for (const v of CSS_VARS) {
+        const raw = cs.getPropertyValue(v).trim();
+        next[v] = parseRGBA(raw || FALLBACK[v]);
+      }
+      colors = next;
+    }
+
+    /** Build one close-packed (111)-style plane, then wreck it. */
+    function build() {
+      const cols = Math.ceil(W / spacing) + 3;
+      const rows = Math.ceil(H / (spacing * 0.866)) + 3;
+
+      // Hard cap: widen the lattice constant until the atom count fits.
+      const count = cols * rows;
+      if (count > maxNodes && spacing < 400) {
+        spacing = spacing * Math.sqrt(count / maxNodes);
+        return build();
+      }
+
+      const rand = rng(seed);
+      const rowH = spacing * 0.866;
+
+      // Grain boundary: a line through the plane. Everything on the far side
+      // belongs to a crystallite that grew in at a different orientation.
+      const gA = Math.cos(0.42), gB = Math.sin(0.42);
+      const gC = -(W * 0.58 * gA + H * 0.34 * gB);
+      const gAngle = 0.19; // ~11deg misorientation
+      const gPivot = { x: W * 0.62, y: H * 0.5 };
+
+      // Edge dislocation core, in the un-annealed region.
+      const core = { x: W * 0.22, y: H * 0.58 };
+      const burgers = spacing * 0.92;
+
+      nodes = [];
+      const index: Array<number | null> = [];
+
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const ox = (c - 1) * spacing + (r % 2 ? spacing * 0.5 : 0);
+          const oy = (r - 1) * rowH;
+
+          const grain = ox * gA + oy * gB + gC > 0;
+          let dx = ox, dy = oy;
+
+          if (grain) {
+            const px = dx - gPivot.x, py = dy - gPivot.y;
+            dx = gPivot.x + px * Math.cos(gAngle) - py * Math.sin(gAngle);
+            dy = gPivot.y + px * Math.sin(gAngle) + py * Math.cos(gAngle);
+          } else {
+            // Edge-dislocation displacement field: u_x = (b/2pi) * atan2(y,x).
+            // This is what actually produces a terminating half-plane.
+            const rx = dx - core.x, ry = dy - core.y;
+            const d2 = rx * rx + ry * ry;
+            const falloff = Math.exp(-d2 / (spacing * 7) ** 2);
+            dx += (burgers / (2 * Math.PI)) * Math.atan2(ry, rx) * falloff * disorder;
+          }
+
+          // Varied bond lengths: independent jitter on every site.
+          dx += (rand() * 2 - 1) * spacing * 0.30 * disorder;
+          dy += (rand() * 2 - 1) * spacing * 0.30 * disorder;
+
+          const vac = rand() < 0.05 * disorder;
+
+          index.push(nodes.length);
+          nodes.push({ ox, oy, dx, dy, ph: rand() * Math.PI * 2, vac, grain });
+        }
+      }
+
+      // Bonds: right neighbour + the two below. Triangular coordination.
+      bonds = [];
+      const at = (r: number, c: number) =>
+        r < 0 || c < 0 || r >= rows || c >= cols ? null : index[r * cols + c];
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const i = at(r, c);
+          if (i === null) continue;
+          const odd = r % 2;
+          const targets = [at(r, c + 1), at(r + 1, c), at(r + 1, c + (odd ? 1 : -1))];
+          for (const j of targets) if (j !== null) bonds.push([i, j]);
+        }
+      }
+
+      // Front travel is measured along the tilt axis, so the sweep covers the
+      // whole plane no matter how the front is angled.
+      const ca = Math.cos(tilt), sa = Math.sin(tilt);
+      const us = [0, W * ca, H * sa, W * ca + H * sa];
+      // Padded by three lattice constants: rows are laid out past the box edges
+      // so the plane never shows a seam, and the front has to clear them too or
+      // the outermost column never finishes annealing at progress = 1.
+      uMin = Math.min(...us) - spacing * 3;
+      uSpan = Math.max(...us) + spacing * 3 - uMin || 1;
+      feather = Math.min(featherBase, uSpan * 0.55);
+    }
+
+    function resize() {
+      const r = root.getBoundingClientRect();
+      const nw = Math.max(1, Math.round(r.width));
+      const nh = Math.max(1, Math.round(r.height));
+      if (nw === W && nh === H) return false;
+      W = nw; H = nh;
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = Math.round(W * dpr);
+      canvas.height = Math.round(H * dpr);
+      ctx!.setTransform(dpr, 0, 0, dpr, 0, 0);
+      spacing = spacingWanted;
+      build();
+      return true;
+    }
+
+    function draw(now: number) {
+      const c = ctx!;
+      const time = (now - t0) / 1000;
+      c.clearRect(0, 0, W, H);
+
+      const ca = Math.cos(tilt), sa = Math.sin(tilt);
+      const frontU = uMin - feather + shown * (uSpan + feather * 2);
+
+      const bondD = colors['--fx-lattice-bond'];
+      const bondO = colors['--fx-lattice-bond-ordered'];
+      const nodeD = colors['--fx-lattice-node'];
+      const nodeO = colors['--fx-lattice-node-ordered'];
+
+      // Per-node anneal + resolved position, computed once per frame.
+      const px = new Float32Array(nodes.length);
+      const py = new Float32Array(nodes.length);
+      const an = new Float32Array(nodes.length);
+      for (let i = 0; i < nodes.length; i++) {
+        const n = nodes[i];
+        const u = n.ox * ca + n.oy * sa;
+        const a = smooth(clamp01((frontU - u) / feather));
+        an[i] = a;
+        // Thermal vibration: loud in the defective region, nearly stilled once
+        // the lattice has settled into its metastable well.
+        const amp = spacing * (0.055 * (1 - a) + 0.010);
+        px[i] = n.dx + (n.ox - n.dx) * a + Math.sin(time * 0.7 + n.ph) * amp;
+        py[i] = n.dy + (n.oy - n.dy) * a + Math.cos(time * 0.55 + n.ph * 1.3) * amp;
+      }
+
+      // --- bonds -------------------------------------------------------------
+      c.lineCap = 'round';
+      for (let k = 0; k < bonds.length; k++) {
+        const [i, j] = bonds[k];
+        const a = (an[i] + an[j]) * 0.5;
+        const ni = nodes[i], nj = nodes[j];
+
+        // Vacancy sites have no bonds until the front refills them; bonds
+        // across the grain boundary only form once the misorientation heals.
+        let strength = 1;
+        if (ni.vac) strength *= an[i];
+        if (nj.vac) strength *= an[j];
+        if (ni.grain !== nj.grain) strength *= a * a;
+        if (strength < 0.02) continue;
+
+        c.globalAlpha = strength;
+        c.strokeStyle = mix(bondD, bondO, a);
+        c.lineWidth = 0.6 + a * 0.55;
+        c.beginPath();
+        c.moveTo(px[i], py[i]);
+        c.lineTo(px[j], py[j]);
+        c.stroke();
+      }
+
+      // --- atoms -------------------------------------------------------------
+      for (let i = 0; i < nodes.length; i++) {
+        const n = nodes[i];
+        const a = an[i];
+        const alpha = n.vac ? a : 1;
+        if (alpha < 0.02) continue;
+        c.globalAlpha = alpha;
+        c.fillStyle = mix(nodeD, nodeO, a);
+        c.beginPath();
+        c.arc(px[i], py[i], 1.15 + a * 1.15, 0, Math.PI * 2);
+        c.fill();
+      }
+      c.globalAlpha = 1;
+
+      // --- the excitation front ---------------------------------------------
+      // Only drawn while the front is actually crossing the plane.
+      if (shown > 0.001 && shown < 0.999) {
+        const fx = colors['--fx-lattice-front'];
+        const fx2 = colors['--fx-lattice-front-2'];
+        const band = feather * 1.5;
+        const diag = Math.hypot(W, H);
+        c.save();
+        // Move to the front's intercept along the tilt axis, then rotate the
+        // band so it stands perpendicular to the direction of travel.
+        c.translate(frontU * ca, frontU * sa);
+        c.rotate(tilt);
+        // Trailing wake (violet) building to a hot leading edge (magenta),
+        // cut off sharply on the far side — energy arrives, then relaxes.
+        const g = c.createLinearGradient(-band, 0, band * 0.35, 0);
+        g.addColorStop(0, fade(fx2, 0));
+        g.addColorStop(0.62, fade(fx2, 1));
+        g.addColorStop(0.9, fade(fx, 1));
+        g.addColorStop(1, fade(fx, 0));
+        c.fillStyle = g;
+        c.fillRect(-band, -diag, band * 1.35, diag * 2);
+        c.restore();
+      }
+    }
+
+    function frame(now: number) {
+      raf = 0;
+      if (!running) return;
+      // ~30fps. This is background texture; 30 reads as continuous and halves
+      // the cost of running behind an entire page.
+      if (now - last >= 33) {
+        last = now;
+        shown += (target - shown) * 0.14;
+        draw(now);
+      }
+      raf = requestAnimationFrame(frame);
+    }
+
+    function start() {
+      if (running || reduced) return;
+      running = true;
+      raf = requestAnimationFrame(frame);
+    }
+    function stop() {
+      running = false;
+      if (raf) cancelAnimationFrame(raf);
+      raf = 0;
+    }
+
+    function computeProgress() {
+      if (source === 'scroll') {
+        const max = document.documentElement.scrollHeight - window.innerHeight;
+        return max > 0 ? clamp01(window.scrollY / max) : 0;
+      }
+      if (source === 'element') {
+        const r = root.getBoundingClientRect();
+        const span = window.innerHeight + r.height;
+        return clamp01((window.innerHeight - r.top) / span);
+      }
+      return target;
+    }
+
+    // Public handle — the design-system demo drives instances through this.
+    (root as any).latticeSetProgress = (p: number) => {
+      target = clamp01(p);
+      if (reduced) { shown = target; draw(performance.now()); }
+    };
+
+    readColors();
+    resize();
+
+    if (reduced) {
+      // Static frame, no loop, no listeners. Self-driven instances (the page
+      // background) render the FULLY ORDERED lattice — the end state is the
+      // argument, so a still of it still makes the point. `manual` instances
+      // honour their author-set progress, which is what the design-system
+      // side-by-side of defective vs. annealed exists to show.
+      shown = target = source === 'manual' ? clamp01(num('progress', 1)) : 1;
+      draw(performance.now());
+      window.addEventListener('resize', () => { if (resize()) draw(performance.now()); }, { passive: true });
+      window.addEventListener('mode-change', () => { readColors(); draw(performance.now()); });
+      return;
+    }
+
+    if (source !== 'manual') {
+      target = computeProgress();
+      shown = target;
+      let ticking = false;
+      const onScroll = () => {
+        if (ticking) return;
+        ticking = true;
+        requestAnimationFrame(() => { target = computeProgress(); ticking = false; });
+      };
+      window.addEventListener('scroll', onScroll, { passive: true });
+    }
+
+    window.addEventListener('resize', () => { if (resize()) last = 0; }, { passive: true });
+    window.addEventListener('mode-change', () => { readColors(); last = 0; });
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) stop();
+      else if (visible) start();
+    });
+
+    // Offscreen instances stop entirely. A fixed full-page instance always
+    // intersects, so this is a no-op there and a real saving in the gallery.
+    const io = new IntersectionObserver(
+      (entries) => {
+        visible = entries[0].isIntersecting;
+        if (visible && !document.hidden) start();
+        else stop();
+      },
+      { rootMargin: '120px' }
+    );
+    io.observe(root);
+  }
+
+  document.querySelectorAll<HTMLElement>('[data-lattice-excitation]').forEach(init);
+</script>

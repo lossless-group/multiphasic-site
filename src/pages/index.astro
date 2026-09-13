@@ -1,0 +1,176 @@
+---
+import BaseThemeLayout from '../layouts/BaseThemeLayout.astro';
+import Wordmark from '../components/basics/Wordmark.astro';
+import ModeToggle from '../components/ui/ModeToggle.astro';
+
+/* Internal variant chooser. Three full builds of the same eight-beat argument,
+ * so they can be compared like-for-like. Not the shipping homepage. */
+const variants = [
+  {
+    slug: 'instrument',
+    name: 'Phase Diagram',
+    stance: 'Closest to the deck',
+    blurb:
+      'The site as a scientific instrument readout. Deck navy, monospaced data, coral reserved for the single loudest number on screen. Almost no motion.',
+    flare: 'EnergyLandscape · PhaseField',
+  },
+  {
+    slug: 'lattice',
+    name: 'Lattice',
+    stance: 'Furthest from the deck',
+    blurb:
+      'The site as the material itself. Near-black with a violet undertone so the METASTATE emission can glow. Oversized type, half the words per screen.',
+    flare: 'LatticeExcitation · PulseEnvelope',
+  },
+  {
+    slug: 'diptych',
+    name: 'Before the Beam',
+    stance: 'Reinterprets the deck',
+    blurb:
+      'The site as a sustained argument in two columns. Paper left (today), navy right (with Multiphasic), and the dividing line is the beam.',
+    flare: 'BeamDivider · OverdesignMass',
+  },
+];
+---
+
+<BaseThemeLayout title="Multiphasic — design directions" theme="instrument" mode="dark">
+  <header class="chooser-chrome">
+    <Wordmark size={30} tagline />
+    <ModeToggle />
+  </header>
+
+  <main class="chooser">
+    <p class="eyebrow">THREE DESIGN DIRECTIONS · ONE NARRATIVE SPINE</p>
+    <h1>Same argument. Three ways of making it.</h1>
+    <p class="lede">
+      Every variant runs the identical eight beats from the same markdown, so the
+      comparison is about form, not content. All three ship light, dark, and vibrant modes.
+    </p>
+
+    <ul class="grid">
+      {
+        variants.map((v) => (
+          <li class="card">
+            <a href={`/${v.slug}`}>
+              <span class="stance">{v.stance}</span>
+              <h2>{v.name}</h2>
+              <p>{v.blurb}</p>
+              <span class="flare-list">{v.flare}</span>
+              <span class="go">View direction &rarr;</span>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+
+    <nav class="refs">
+      <a href="/design-system">Design system</a>
+      <a href="/brand-kit">Brand kit</a>
+      <a href="/design-system/flare">Flare gallery</a>
+    </nav>
+  </main>
+</BaseThemeLayout>
+
+<style>
+  .chooser-chrome {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.5rem clamp(1.5rem, 5vw, 4rem);
+    border-bottom: 1px solid var(--color-border);
+  }
+  .chooser {
+    max-width: 68rem;
+    margin: 0 auto;
+    padding: clamp(3rem, 8vw, 6rem) clamp(1.5rem, 5vw, 4rem) 6rem;
+  }
+  .eyebrow {
+    font-family: var(--font-eyebrow);
+    font-size: 0.72rem;
+    letter-spacing: 0.18em;
+    color: var(--color-primary);
+    margin-bottom: 1.5rem;
+  }
+  h1 {
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 5vw, 3.25rem);
+    font-weight: 500;
+    line-height: 1.08;
+    letter-spacing: -0.02em;
+    margin-bottom: 1.25rem;
+  }
+  .lede {
+    max-width: 46rem;
+    color: var(--color-text-muted);
+    font-size: 1.05rem;
+    line-height: 1.6;
+    margin-bottom: 3.5rem;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+    gap: 1.25rem;
+    list-style: none;
+    padding: 0;
+    margin: 0 0 4rem;
+  }
+  .card a {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    height: 100%;
+    padding: 1.75rem;
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    text-decoration: none;
+    color: inherit;
+    transition: border-color 160ms ease, transform 160ms ease;
+  }
+  .card a:hover {
+    border-color: var(--color-primary);
+    transform: translateY(-2px);
+  }
+  .stance {
+    font-family: var(--font-eyebrow);
+    font-size: 0.66rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-accent);
+  }
+  .card h2 {
+    font-family: var(--font-display);
+    font-size: 1.4rem;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+  }
+  .card p {
+    color: var(--color-text-muted);
+    font-size: 0.92rem;
+    line-height: 1.55;
+    flex: 1;
+  }
+  .flare-list {
+    font-family: var(--font-data);
+    font-size: 0.72rem;
+    color: var(--color-text-faint);
+  }
+  .go {
+    font-family: var(--font-data);
+    font-size: 0.78rem;
+    color: var(--color-primary);
+  }
+  .refs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--color-border);
+  }
+  .refs a {
+    font-family: var(--font-data);
+    font-size: 0.82rem;
+    color: var(--color-text-muted);
+    text-decoration: none;
+  }
+  .refs a:hover { color: var(--color-primary); }
+</style>

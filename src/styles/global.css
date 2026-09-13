@@ -1,0 +1,93 @@
+@import "tailwindcss";
+
+@source "../../src/**/*.astro";
+@source "../../src/**/*.svelte";
+@source "../../src/**/*.ts";
+
+/* Per-variant Tier 2 semantic token blocks. Each file owns exactly one
+ * [data-theme="..."] and its three [data-mode="..."] blocks. */
+@import "./themes/instrument.css";
+@import "./themes/lattice.css";
+@import "./themes/diptych.css";
+
+/* ============================================================================
+ * TIER 1 — Named tokens. Raw values only, BEM-ish `__` separator.
+ * NEVER read a `__` token from a component or a Tailwind utility.
+ * Derived from the source deck (2026-08-26) plus per-direction extensions.
+ * ========================================================================== */
+:root {
+  /* — Deck-native navy family (the latent brand) — */
+  --color__navy-abyss:      #061B2C;
+  --color__navy-deep:       #0A2C47;
+  --color__navy-slate:      #123A56;
+  --color__navy-haze:       #1E4E6E;
+
+  /* — Deck-native accents — */
+  --color__coral-strike:    #E8593C;
+  --color__coral-ember:     #FF7A5C;
+  --color__cyan-signal:     #29B6E8;
+  --color__cyan-ice:        #7FD8F5;
+  --color__beam-white:      #BFEFFF;
+
+  /* — Ultrafast laser family (slide 3: the METASTATE emission sheet) — */
+  --color__violet-pulse:    #7B5CFF;
+  --color__violet-deep:     #4A2FD6;
+  --color__magenta-excite:  #FF3DCB;
+  --color__plum-void:       #08060E;
+  --color__plum-shadow:     #14101F;
+
+  /* — Paper / bone (Direction C's light ground) — */
+  --color__paper:           #FAF7F2;
+  --color__bone:            #EFE9E0;
+  --color__ash:             #C9C3BA;
+  --color__graphite:        #2A2E33;
+
+  /* — Neutrals — */
+  --color__white:           #FFFFFF;
+  --color__black:           #000000;
+  --color__steel-100:       #E6EDF3;
+  --color__steel-400:       #8FA6B8;
+  --color__steel-700:       #3D5468;
+
+  /* — Type families —
+   * Space Grotesk carries the wordmark's wide geometric proportions.
+   * JetBrains Mono is the data face: every number, unit, axis tick, label.
+   * Fraunces gives Direction C its editorial voice. */
+  --font__space-grotesk:    'Space Grotesk', 'Helvetica Neue', system-ui, sans-serif;
+  --font__jetbrains-mono:   'JetBrains Mono', 'SF Mono', ui-monospace, monospace;
+  --font__inter:            'Inter', system-ui, -apple-system, sans-serif;
+  --font__fraunces:         'Fraunces', 'Iowan Old Style', Georgia, serif;
+}
+
+/* ============================================================================
+ * Global resets + motion contract
+ * ========================================================================== */
+html {
+  background-color: var(--color-background);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  scroll-behavior: smooth;
+}
+
+html.theme-transition,
+html.theme-transition * {
+  transition: background-color 240ms ease, color 240ms ease, border-color 240ms ease;
+}
+
+body { background-color: var(--color-background); min-height: 100vh; }
+
+::selection { background: var(--color-primary); color: var(--color-background); }
+
+/* Every flare component must honor this. Static fallback, no exceptions. */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Numbers are never set in the body face. */
+.tabular { font-family: var(--font-data); font-variant-numeric: tabular-nums; }

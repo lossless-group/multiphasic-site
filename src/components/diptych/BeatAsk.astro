@@ -1,0 +1,91 @@
+---
+import DiptychSection from './DiptychSection.astro';
+import DiptychRow from './DiptychRow.astro';
+import Wordmark from '../basics/Wordmark.astro';
+import type { CollectionEntry } from 'astro:content';
+
+/* ============================================================================
+ * Beat 8 — The ask. Deliberately quiet.
+ *
+ * The seam comes back to 30 and stops moving. No figures, no bars, no
+ * measurement track. One line, one address, one mark on the left margin where
+ * the eyebrow has been all along.
+ * ========================================================================== */
+
+export interface Props {
+  beat: CollectionEntry<'beats'>;
+  body?: any;
+}
+const { beat, body: Body } = Astro.props;
+const d = beat.data as any;
+---
+
+<DiptychSection id={d.slug_id} split={30} size="tall">
+  <DiptychRow gap="none" align="center">
+    <div class="ask-margin" slot="past">
+      <p class="dx-eyebrow on-past">{d.eyebrow}</p>
+      <hr class="dx-rule on-past" />
+      <div class="ask-mark">
+        <Wordmark size={26} stacked />
+      </div>
+      {
+        Body && (
+          <div class="dx-note on-past ask-imprint">
+            <Body />
+          </div>
+        )
+      }
+    </div>
+    <div class="ask-body" slot="future">
+      <h2 class="dx-h2">{d.title}</h2>
+      <p class="dx-lede on-future ask-sub">{d.sub}</p>
+      {d.cta_label && d.cta_href && <a class="dx-cta ask-cta" href={d.cta_href}>{d.cta_label}</a>}
+    </div>
+  </DiptychRow>
+</DiptychSection>
+
+<style>
+  .ask-margin {
+    text-align: right;
+  }
+  .ask-margin .dx-rule {
+    margin-left: auto;
+  }
+  .ask-mark {
+    display: flex;
+    justify-content: flex-end;
+    margin: 2rem 0 1.25rem;
+    color: var(--color-past-text);
+    /* The mark defaults to --color-primary, which is cyan in the dark modes.
+     * Cyan is the gain colour and may not appear left of the beam, so the mark
+     * is re-pointed to neutral past ink here. */
+    --color-primary: var(--color-past-text);
+  }
+  .ask-imprint {
+    max-width: 26ch;
+    margin-left: auto;
+  }
+  .ask-body {
+    max-width: 38ch;
+  }
+  .ask-sub {
+    margin-top: 1.1rem;
+  }
+  .ask-cta {
+    margin-top: 2rem;
+  }
+
+  @media (max-width: 899px) {
+    .ask-margin,
+    .ask-imprint {
+      text-align: left;
+      margin-left: 0;
+    }
+    .ask-margin .dx-rule {
+      margin-left: 0;
+    }
+    .ask-mark {
+      justify-content: flex-start;
+    }
+  }
+</style>

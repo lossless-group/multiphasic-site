@@ -1,0 +1,236 @@
+---
+// Flare demo — PulseEnvelope.
+// The divider that replaces the deck's coral rule. Variants shown at the sizes
+// the page actually uses, plus the extremes, so the tightness/cycles pair can
+// be judged rather than guessed at.
+import BaseThemeLayout from '../../../layouts/BaseThemeLayout.astro';
+import Wordmark from '../../../components/basics/Wordmark.astro';
+import ModeToggle from '../../../components/ui/ModeToggle.astro';
+import PulseEnvelope from '../../../components/flare/PulseEnvelope.astro';
+
+const props = [
+  ['packet', 'number', '420', 'Pulse width in px — how long the packet looks against the span.'],
+  ['height', 'number', '34', 'Divider height in px. Sets carrier amplitude.'],
+  ['cycles', 'number', '9', 'Carrier oscillations inside the envelope.'],
+  ['tightness', 'number', '5.2', 'Gaussian tightness. Higher = shorter pulse.'],
+  ['color', 'string', 'var(--color-primary)', 'Carrier stroke. Any semantic token.'],
+  ['envelope', 'boolean', 'true', 'Draw the dashed Gaussian around the carrier.'],
+  ['speed', 'number', '9', 'Seconds per traverse.'],
+  ['motion', "'sweep' | 'none'", "'sweep'", "'none' parks the packet mid-span."],
+  ['baseline', 'boolean', 'true', 'Hairline the packet travels along.'],
+  ['delay', 'number', '0', 'Negative animation delay — stagger multiple dividers.'],
+];
+---
+
+<BaseThemeLayout title="PulseEnvelope — flare" theme="lattice" mode="dark">
+  <header class="ds-chrome">
+    <Wordmark size={24} />
+    <div class="ds-chrome-right">
+      <a href="/design-system/flare/LatticeExcitation">LatticeExcitation</a>
+      <a href="/lattice">Direction B</a>
+      <ModeToggle />
+    </div>
+  </header>
+
+  <main class="ds">
+    <p class="ds-eyebrow">FLARE · DIRECTION B</p>
+    <h1>PulseEnvelope</h1>
+    <p class="ds-lede">
+      A femtosecond pulse — a carrier wave inside a Gaussian envelope — travelling along
+      a hairline. It is the divider between two sections because it is the thing that
+      separates before from after: the packet METASTATE puts into the lattice. Pure SVG
+      and CSS, shape computed at build time, no runtime JS.
+    </p>
+
+    <section class="ds-block">
+      <h2>Page default</h2>
+      <p class="ds-note">As used between beats 4 and 5. <code>packet={360} height={30} cycles={8} speed={11}</code></p>
+      <div class="ds-stage"><PulseEnvelope packet={360} height={30} cycles={8} speed={11} /></div>
+    </section>
+
+    <section class="ds-block">
+      <h2>Mechanism variant</h2>
+      <p class="ds-note">Under the METASTATE headline: wider, faster, set in the accent. <code>packet={460} height={40} cycles={11} speed={7}</code></p>
+      <div class="ds-stage"><PulseEnvelope packet={460} height={40} cycles={11} speed={7} color="var(--color-accent)" /></div>
+    </section>
+
+    <section class="ds-block">
+      <h2>Pulse duration</h2>
+      <p class="ds-note">
+        <code>tightness</code> is the envelope's width against the packet. Higher values
+        confine more energy into less time — visually, fewer surviving oscillations.
+      </p>
+      <div class="ds-stage"><PulseEnvelope tightness={2.4} cycles={12} motion="none" /></div>
+      <p class="ds-cap">tightness = 2.4 · loose</p>
+      <div class="ds-stage"><PulseEnvelope tightness={5.2} cycles={12} motion="none" /></div>
+      <p class="ds-cap">tightness = 5.2 · default</p>
+      <div class="ds-stage"><PulseEnvelope tightness={9} cycles={12} motion="none" /></div>
+      <p class="ds-cap">tightness = 9 · tight</p>
+    </section>
+
+    <section class="ds-block">
+      <h2>Colour roles</h2>
+      <p class="ds-note">
+        Cyan is the conditioned state, so a cyan pulse reads as an after-divider; the
+        violet/magenta pair reads as the excitation itself.
+      </p>
+      <div class="ds-stage"><PulseEnvelope color="var(--color-primary)" speed={10} /></div>
+      <p class="ds-cap">--color-primary</p>
+      <div class="ds-stage"><PulseEnvelope color="var(--color-accent)" speed={10} delay={3} /></div>
+      <p class="ds-cap">--color-accent</p>
+      <div class="ds-stage"><PulseEnvelope color="var(--color-conditioned)" speed={10} delay={6} /></div>
+      <p class="ds-cap">--color-conditioned</p>
+    </section>
+
+    <section class="ds-block">
+      <h2>Stripped</h2>
+      <p class="ds-note">No envelope, no baseline — just the carrier. Useful in tight chrome.</p>
+      <div class="ds-stage"><PulseEnvelope envelope={false} baseline={false} height={22} packet={300} speed={8} /></div>
+    </section>
+
+    <section class="ds-block">
+      <h2>Props</h2>
+      <table class="ds-table">
+        <thead><tr><th>Prop</th><th>Type</th><th>Default</th><th>Notes</th></tr></thead>
+        <tbody>
+          {props.map(([n, t, d, note]) => (
+            <tr><td><code>{n}</code></td><td>{t}</td><td><code>{d}</code></td><td>{note}</td></tr>
+          ))}
+        </tbody>
+      </table>
+    </section>
+
+    <section class="ds-block">
+      <h2>Motion &amp; cost</h2>
+      <ul class="ds-list">
+        <li><strong>prefers-reduced-motion:</strong> the packet parks mid-span with its shape intact. The pulse is the meaning; the travel is only the ornament.</li>
+        <li><strong>No runtime JS.</strong> The path is generated in the component's frontmatter at build time.</li>
+        <li><strong>Compositor only.</strong> The sweep is a single <code>transform</code> on a fixed-size SVG, measured in <code>cqw</code> against the divider's container.</li>
+        <li><strong>Hairlines stay hairlines</strong> via <code>vector-effect="non-scaling-stroke"</code> at any devicePixelRatio.</li>
+      </ul>
+    </section>
+  </main>
+</BaseThemeLayout>
+
+<style>
+  .ds-chrome {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.9rem clamp(1.25rem, 5vw, 3rem);
+    border-bottom: 1px solid var(--fx-hairline);
+    background: color-mix(in srgb, var(--color-background) 82%, transparent);
+    backdrop-filter: blur(14px);
+  }
+  .ds-chrome-right { display: flex; align-items: center; gap: 1.25rem; flex-wrap: wrap; }
+  .ds-chrome-right a {
+    font-family: var(--font-data);
+    font-size: 0.6875rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+    text-decoration: none;
+  }
+  .ds-chrome-right a:hover { color: var(--color-primary); }
+
+  .ds {
+    max-width: 64rem;
+    margin-inline: auto;
+    padding: clamp(2.5rem, 7vw, 4.5rem) clamp(1.25rem, 5vw, 3rem) 8rem;
+  }
+  .ds-eyebrow {
+    font-family: var(--font-data);
+    font-size: 0.625rem;
+    letter-spacing: 0.28em;
+    color: var(--color-accent);
+    margin-bottom: 1.25rem;
+  }
+  .ds h1 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: clamp(2rem, 6vw, 3.75rem);
+    letter-spacing: -0.04em;
+    line-height: 0.95;
+    color: var(--color-text);
+  }
+  .ds-lede {
+    margin-top: 1.25rem;
+    max-width: 54ch;
+    font-family: var(--font-body);
+    font-weight: 300;
+    font-size: 1rem;
+    line-height: 1.65;
+    color: var(--color-text-muted);
+  }
+  .ds-block { margin-top: clamp(3rem, 7vw, 4.5rem); }
+  .ds-block h2 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 1.15rem;
+    letter-spacing: -0.01em;
+    color: var(--color-text);
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--fx-hairline);
+  }
+  .ds-note {
+    margin: 1rem 0 1.5rem;
+    max-width: 60ch;
+    font-family: var(--font-body);
+    font-weight: 300;
+    font-size: 0.875rem;
+    line-height: 1.65;
+    color: var(--color-text-muted);
+  }
+  .ds-note code, .ds-table code, .ds-list code {
+    font-family: var(--font-data);
+    font-size: 0.8em;
+    color: var(--color-conditioned);
+  }
+
+  .ds-stage {
+    padding: 1.25rem 0;
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+  }
+  .ds-cap {
+    margin: 0.55rem 0 1.5rem;
+    font-family: var(--font-data);
+    font-size: 0.625rem;
+    letter-spacing: 0.14em;
+    color: var(--color-text-faint);
+  }
+
+  .ds-table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; }
+  .ds-table th, .ds-table td {
+    text-align: left;
+    padding: 0.7rem 0.9rem 0.7rem 0;
+    border-bottom: 1px solid var(--fx-hairline);
+    vertical-align: top;
+    font-family: var(--font-body);
+    font-weight: 300;
+    color: var(--color-text-muted);
+  }
+  .ds-table th {
+    font-family: var(--font-data);
+    font-weight: 400;
+    font-size: 0.625rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--color-text-faint);
+  }
+
+  .ds-list { margin: 0; padding-left: 1.1rem; }
+  .ds-list li {
+    margin-bottom: 0.7rem;
+    font-family: var(--font-body);
+    font-weight: 300;
+    font-size: 0.875rem;
+    line-height: 1.65;
+    color: var(--color-text-muted);
+  }
+  .ds-list strong { color: var(--color-text); font-weight: 500; }
+</style>

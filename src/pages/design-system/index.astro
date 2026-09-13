@@ -1,0 +1,211 @@
+---
+import BaseThemeLayout from '../../layouts/BaseThemeLayout.astro';
+import Wordmark from '../../components/basics/Wordmark.astro';
+import ModeToggle from '../../components/ui/ModeToggle.astro';
+
+/* Design System — developer- and agent-facing catalog.
+ * Per firm policy this replaces Storybook: every component introduced or
+ * modified lands here in the same change. */
+const flare = [
+  {
+    name: 'EnergyLandscape',
+    direction: 'Phase Diagram',
+    href: '/design-system/flare/EnergyLandscape',
+    what: 'The metastable-well diagram, scroll-driven. A marker rests in a shallow CONVENTIONAL minimum; a pulse strikes, the curve deforms, and it settles into a deeper METASTATE well.',
+  },
+  {
+    name: 'PhaseField',
+    direction: 'Phase Diagram',
+    href: '/design-system/flare/PhaseField',
+    what: 'A quiet EBSD-style polycrystalline grain map that reorganizes its cell boundaries on reveal.',
+  },
+  {
+    name: 'LatticeExcitation',
+    direction: 'Lattice',
+    href: '/design-system/flare/LatticeExcitation',
+    what: 'A full-page node-and-edge lattice that starts defective — dislocations, a grain boundary — and anneals into order behind a scroll-driven wavefront.',
+  },
+  {
+    name: 'PulseEnvelope',
+    direction: 'Lattice',
+    href: '/design-system/flare/PulseEnvelope',
+    what: 'A femtosecond pulse envelope — carrier wave inside a Gaussian — used as a section divider. Replaces the deck’s coral rule with something that means something.',
+  },
+  {
+    name: 'BeamDivider',
+    direction: 'Before the Beam',
+    href: '/design-system/flare/BeamDivider',
+    what: 'The vertical light seam dividing every diptych. Sharp core, soft bloom, slight drift. The fractured-bridge slide as a UI primitive.',
+  },
+  {
+    name: 'OverdesignMass',
+    direction: 'Before the Beam',
+    href: '/design-system/flare/OverdesignMass',
+    what: 'The "up to 2X more material" stat rendered literally — a part silhouette shedding its hedge material down to the true-performance profile.',
+  },
+];
+
+const rules = [
+  ['Tech hierarchy', 'HTML/CSS first. Vanilla JS second. A small focused package third. A framework last. No React, no JSX, no MDX, no UI libraries.'],
+  ['Two-tier tokens', 'Components read only kebab-case semantic tokens (--color-primary, --font-display, --fx-*). Tier-1 __ tokens live in global.css and are referenced only from src/styles/themes/*.css.'],
+  ['Three modes', 'light / dark / vibrant on data-mode. Vibrant is dark-based and must set background, surface, text and border explicitly — inheriting light-mode white is the standard failure.'],
+  ['Flare convention', 'Design-oriented components live in src/components/flare/, take PascalCase conceptual names, accept props for color / size / motion, and honor prefers-reduced-motion with a meaningful static fallback.'],
+  ['Content in markdown', 'The eight narrative beats live in src/content/beats/. All three directions render the same spine — form differs, argument does not.'],
+];
+---
+
+<BaseThemeLayout title="Multiphasic — Design System" theme="instrument" mode="dark">
+  <header class="ds-chrome">
+    <Wordmark size={30} />
+    <div class="ds-nav">
+      <a href="/">Directions</a>
+      <a href="/brand-kit">Brand kit</a>
+      <ModeToggle />
+    </div>
+  </header>
+
+  <main class="ds">
+    <p class="eyebrow">DESIGN SYSTEM</p>
+    <h1>Component catalog</h1>
+    <p class="lede">
+      Three design directions share one foundation: one set of Tier-1 named tokens, one
+      layout pair, one brand mark, one content spine. What differs is the semantic token
+      layer and the section components each direction composes.
+    </p>
+
+    <section class="ds-section">
+      <h2>Flare</h2>
+      <p class="note">
+        Illustrations and animations as code, never as raster exports. Each direction
+        contributes two.
+      </p>
+      <ul class="flare-grid">
+        {
+          flare.map((f) => (
+            <li>
+              <a href={f.href}>
+                <span class="dir">{f.direction}</span>
+                <h3>{f.name}</h3>
+                <p>{f.what}</p>
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </section>
+
+    <section class="ds-section">
+      <h2>Shared components</h2>
+      <ul class="plain">
+        <li><code>basics/MarkLattice.astro</code> — the circular two-phase mark. Props: <code>size</code>, <code>ring</code>, <code>nodes</code>.</li>
+        <li><code>basics/Wordmark.astro</code> — mark + MULTIPHASIC lockup. Props: <code>size</code>, <code>tagline</code>, <code>stacked</code>.</li>
+        <li><code>ui/ModeToggle.astro</code> — canonical 3-mode cycle button (light → dark → vibrant).</li>
+        <li><code>layouts/BaseThemeLayout.astro</code> — theme + mode wrapper. Props: <code>title</code>, <code>description</code>, <code>theme</code>, <code>mode</code>.</li>
+      </ul>
+    </section>
+
+    <section class="ds-section">
+      <h2>House rules</h2>
+      <dl class="rules">
+        {rules.map(([k, v]) => (<><dt>{k}</dt><dd>{v}</dd></>))}
+      </dl>
+    </section>
+  </main>
+</BaseThemeLayout>
+
+<style>
+  .ds-chrome {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    padding: 1.25rem clamp(1.5rem, 5vw, 4rem);
+    border-bottom: 1px solid var(--color-border);
+  }
+  .ds-nav { display: flex; align-items: center; gap: 1.25rem; }
+  .ds-nav a {
+    font-family: var(--font-data);
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    text-decoration: none;
+  }
+  .ds-nav a:hover { color: var(--color-primary); }
+  .ds {
+    max-width: 72rem;
+    margin: 0 auto;
+    padding: clamp(2.5rem, 6vw, 4.5rem) clamp(1.5rem, 5vw, 4rem) 6rem;
+  }
+  .eyebrow {
+    font-family: var(--font-eyebrow);
+    font-size: 0.72rem;
+    letter-spacing: 0.18em;
+    color: var(--color-primary);
+    margin-bottom: 1rem;
+  }
+  h1 {
+    font-family: var(--font-display);
+    font-size: clamp(1.9rem, 4.5vw, 2.9rem);
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    margin-bottom: 1rem;
+  }
+  .lede {
+    max-width: 46rem;
+    color: var(--color-text-muted);
+    line-height: 1.6;
+  }
+  .ds-section { margin-top: 3.5rem; }
+  .ds-section h2 {
+    font-family: var(--font-display);
+    font-size: 1.35rem;
+    font-weight: 500;
+    padding-bottom: 0.6rem;
+    border-bottom: 1px solid var(--color-border);
+    margin-bottom: 1.1rem;
+  }
+  .note { color: var(--color-text-muted); font-size: 0.9rem; margin-bottom: 1.4rem; }
+  .flare-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+    gap: 1rem;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  .flare-grid a {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    height: 100%;
+    padding: 1.25rem;
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    color: inherit;
+    text-decoration: none;
+    transition: border-color 160ms ease;
+  }
+  .flare-grid a:hover { border-color: var(--color-primary); }
+  .dir {
+    font-family: var(--font-eyebrow);
+    font-size: 0.62rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-accent);
+  }
+  .flare-grid h3 { font-family: var(--font-data); font-size: 0.98rem; font-weight: 500; }
+  .flare-grid p { color: var(--color-text-muted); font-size: 0.85rem; line-height: 1.5; }
+  .plain { list-style: none; padding: 0; display: grid; gap: 0.55rem; }
+  .plain li { color: var(--color-text-muted); font-size: 0.9rem; line-height: 1.5; }
+  code { font-family: var(--font-data); font-size: 0.8rem; color: var(--color-primary); }
+  .rules { display: grid; gap: 0.35rem; }
+  .rules dt {
+    font-family: var(--font-eyebrow);
+    font-size: 0.7rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-primary);
+    margin-top: 1rem;
+  }
+  .rules dd { margin: 0; color: var(--color-text-muted); font-size: 0.9rem; line-height: 1.55; }
+</style>

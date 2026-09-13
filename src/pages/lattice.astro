@@ -1,0 +1,351 @@
+---
+// ============================================================================
+// Direction B — "Lattice". The site as the material itself.
+//
+// Eight beats, each a full-bleed held moment, all read from src/content/beats.
+// Roughly half the words per screen of a normal marketing page: `sub` fields
+// and markdown bodies are rendered only where the beat is stronger for having
+// them. The rationing exists so beat 5 (METASTATE) can be loud.
+//
+// The lattice canvas runs behind the whole page, defective at the top and
+// annealed at the bottom, with the wavefront tied to scroll position. The
+// chrome reports the material's state as a word, so the reader always knows
+// which side of the front they are standing on.
+// ============================================================================
+import { getCollection } from 'astro:content';
+
+import BaseThemeLayout from '../layouts/BaseThemeLayout.astro';
+import Wordmark from '../components/basics/Wordmark.astro';
+import ModeToggle from '../components/ui/ModeToggle.astro';
+
+import LatticeExcitation from '../components/flare/LatticeExcitation.astro';
+import PulseEnvelope from '../components/flare/PulseEnvelope.astro';
+
+import BeatSection from '../components/lattice/BeatSection.astro';
+import StateReadout from '../components/lattice/StateReadout.astro';
+import BeatHero from '../components/lattice/BeatHero.astro';
+import BeatGap from '../components/lattice/BeatGap.astro';
+import BeatCost from '../components/lattice/BeatCost.astro';
+import BeatSqueeze from '../components/lattice/BeatSqueeze.astro';
+import BeatMechanism from '../components/lattice/BeatMechanism.astro';
+import BeatResult from '../components/lattice/BeatResult.astro';
+import BeatVision from '../components/lattice/BeatVision.astro';
+import BeatAsk from '../components/lattice/BeatAsk.astro';
+
+const beats = (await getCollection('beats')).sort((a, b) => a.data.order - b.data.order);
+const bySlug = new Map(beats.map((b) => [b.data.slug_id, b]));
+
+/** Markdown bodies are single plain paragraphs; unwrap the source line breaks. */
+const prose = (id: string) =>
+  (bySlug.get(id)?.body ?? '').replace(/\s+/g, ' ').trim() || undefined;
+const beat = (id: string) => bySlug.get(id)!.data as Record<string, any>;
+---
+
+<BaseThemeLayout
+  title="Multiphasic — program the state of matter"
+  theme="lattice"
+  mode="dark"
+>
+  <a class="lx-skip" href="#thesis">Skip to content</a>
+
+  {/* Ambient material. Fixed behind everything, driven by document scroll. */}
+  <LatticeExcitation fixed source="scroll" spacing={64} maxNodes={620} />
+  <div class="lx-veil" aria-hidden="true"></div>
+
+  <header class="lx-chrome">
+    <Wordmark size={24} />
+    <div class="lx-chrome-right">
+      <StateReadout />
+      <ModeToggle />
+    </div>
+  </header>
+
+  <main class="lx-main">
+    <BeatSection id="thesis" full eyebrow={beat('thesis').eyebrow} labelledby="beat-thesis">
+      <BeatHero data={beat('thesis')} />
+    </BeatSection>
+
+    <BeatSection id="the-gap" full eyebrow={beat('the-gap').eyebrow} labelledby="beat-the-gap">
+      <BeatGap data={beat('the-gap')} />
+    </BeatSection>
+
+    <BeatSection id="the-cost" tone="band" eyebrow={beat('the-cost').eyebrow} labelledby="beat-the-cost">
+      <BeatCost data={beat('the-cost')} note={prose('the-cost')} />
+    </BeatSection>
+
+    <BeatSection id="the-squeeze" eyebrow={beat('the-squeeze').eyebrow} labelledby="beat-the-squeeze">
+      <BeatSqueeze data={beat('the-squeeze')} />
+    </BeatSection>
+
+    <div class="lx-divider">
+      <PulseEnvelope packet={360} height={30} cycles={8} speed={11} delay={2} />
+    </div>
+
+    <BeatSection id="metastate" full eyebrow={beat('metastate').eyebrow} labelledby="beat-metastate">
+      <BeatMechanism data={beat('metastate')} closing={prose('metastate')} />
+    </BeatSection>
+
+    <BeatSection id="the-result" tone="band" eyebrow={beat('the-result').eyebrow} labelledby="beat-the-result">
+      <BeatResult data={beat('the-result')} closing={prose('the-result')} />
+    </BeatSection>
+
+    <BeatSection id="vision" full eyebrow={beat('vision').eyebrow} labelledby="beat-vision">
+      <BeatVision data={beat('vision')} closing={prose('vision')} />
+    </BeatSection>
+
+    <BeatSection id="contact" eyebrow={beat('contact').eyebrow} labelledby="beat-contact">
+      <BeatAsk data={beat('contact')} closing={prose('contact')} />
+    </BeatSection>
+  </main>
+</BaseThemeLayout>
+
+<style is:global>
+  /* ==========================================================================
+   * Shared `.lx-*` layer for Direction B.
+   *
+   * Global rather than scoped because the reveal and the type scale have to
+   * reach content passed through <slot/>, which Astro's scoping cannot cross.
+   * Every selector is `lx-` prefixed so it cannot collide with the sibling
+   * directions building in this same tree.
+   * ======================================================================== */
+
+  .lx-skip {
+    position: absolute;
+    left: -9999px;
+    top: 0;
+    z-index: 100;
+    padding: 0.75rem 1.25rem;
+    background: var(--color-surface-raised);
+    color: var(--color-text);
+    font-family: var(--font-data);
+    font-size: 0.75rem;
+  }
+  .lx-skip:focus { left: 0; }
+
+  /* --- ground ------------------------------------------------------------- */
+  .lx-veil {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    background: var(--fx-veil);
+    pointer-events: none;
+  }
+
+  /* --- chrome ------------------------------------------------------------- */
+  .lx-chrome {
+    position: fixed;
+    inset: 0 0 auto 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.9rem clamp(1.25rem, 6vw, 5rem);
+    border-bottom: 1px solid var(--fx-hairline);
+    background: color-mix(in srgb, var(--color-background) 78%, transparent);
+    backdrop-filter: blur(14px);
+  }
+  .lx-chrome-right {
+    display: flex;
+    align-items: center;
+    gap: clamp(0.75rem, 2vw, 1.5rem);
+  }
+  @media (max-width: 26rem) {
+    .lx-chrome [data-state-readout] { display: none; }
+  }
+
+  /* --- sections ----------------------------------------------------------- */
+  .lx-main { position: relative; z-index: 1; }
+
+  .lx-beat {
+    position: relative;
+    padding-block: clamp(5rem, 13vh, 9rem);
+    /* The chrome is fixed; in-page anchors must clear it. */
+    scroll-margin-top: 4.5rem;
+  }
+  .lx-beat.is-full {
+    min-height: 100vh;
+    min-height: 100svh;
+    display: flex;
+    align-items: center;
+  }
+  .lx-beat:first-of-type { padding-top: clamp(7rem, 16vh, 11rem); }
+
+  .lx-beat-inner {
+    width: 100%;
+    max-width: 78rem;
+    margin-inline: auto;
+    padding-inline: clamp(1.25rem, 6vw, 5rem);
+  }
+
+  /* A translucent plate of the supporting surface colour. The lattice stays
+     visible through it — the material is never fully covered. */
+  .lx-beat.is-band { background: var(--fx-band); }
+
+  /* The section transition IS an excitation event: a front crosses the top
+     edge and the content resolves behind it. */
+  .lx-beat-front {
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 1px;
+    transform-origin: left center;
+    transform: scaleX(0);
+    opacity: 0;
+    background: var(--fx-excite-gradient);
+    box-shadow: var(--fx-excite-glow);
+  }
+  .lx-beat:first-of-type .lx-beat-front { display: none; }
+  .lx-beat.is-lit .lx-beat-front {
+    animation: lx-front 1200ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+  @keyframes lx-front {
+    0%   { transform: scaleX(0); opacity: 0; }
+    14%  { opacity: 1; }
+    72%  { opacity: 1; }
+    100% { transform: scaleX(1); opacity: 0.5; }
+  }
+
+  /* --- reveal ------------------------------------------------------------- */
+  .lx-rise {
+    opacity: 0;
+    transform: translateY(20px);
+    transition:
+      opacity 760ms cubic-bezier(0.16, 1, 0.3, 1),
+      transform 760ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .lx-beat.is-lit .lx-rise { opacity: 1; transform: none; }
+  .lx-beat.is-lit .lx-beat-inner > .lx-rise:nth-child(2) { transition-delay: 70ms; }
+  .lx-beat.is-lit .lx-beat-inner > .lx-rise:nth-child(3) { transition-delay: 140ms; }
+  .lx-beat.is-lit li.lx-rise:nth-child(2) { transition-delay: 90ms; }
+  .lx-beat.is-lit li.lx-rise:nth-child(3) { transition-delay: 180ms; }
+  .lx-beat.is-lit li.lx-rise:nth-child(4) { transition-delay: 270ms; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .lx-rise { opacity: 1; transform: none; }
+    .lx-beat-front { transform: scaleX(1); opacity: 0.5; animation: none; }
+  }
+
+  /* --- type scale ---------------------------------------------------------
+   * The page breathes in extremes: display runs to 9rem, body sits at 0.875rem
+   * and never grows. There is deliberately nothing in between except the
+   * lede — the middle of a type scale is where brochures live.
+   * ----------------------------------------------------------------------- */
+  .lx-eyebrow {
+    font-family: var(--font-eyebrow);
+    font-size: 0.625rem;
+    font-weight: 400;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+    margin-bottom: clamp(2rem, 5vw, 3.5rem);
+  }
+  /* The deck's coral rule, reassigned: a short hard mark before every eyebrow. */
+  .lx-eyebrow::before {
+    content: '';
+    display: inline-block;
+    width: 1.75rem;
+    height: 1px;
+    margin-right: 0.9rem;
+    vertical-align: middle;
+    background: var(--color-accent);
+  }
+
+  .lx-display-xl {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: clamp(2.75rem, 10.5vw, 9rem);
+    line-height: 0.86;
+    letter-spacing: -0.045em;
+    color: var(--color-text);
+    text-wrap: balance;
+  }
+  .lx-display-l {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: clamp(1.9rem, 6vw, 5rem);
+    line-height: 0.95;
+    letter-spacing: -0.035em;
+    color: var(--color-text);
+    max-width: 18ch;
+    text-wrap: balance;
+  }
+
+  /* The one excitation treatment. Reserved for METASTATE. */
+  .lx-excite {
+    background: var(--fx-excite-gradient);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .lx-lede {
+    font-family: var(--font-body);
+    font-weight: 300;
+    font-size: clamp(0.95rem, 1.4vw, 1.15rem);
+    line-height: 1.6;
+    color: var(--color-text-muted);
+  }
+  .lx-body {
+    font-family: var(--font-body);
+    font-weight: 300;
+    font-size: 0.875rem;
+    line-height: 1.65;
+    color: var(--color-text-muted);
+  }
+  .lx-micro {
+    font-family: var(--font-data);
+    font-size: 0.625rem;
+    letter-spacing: 0.16em;
+    color: var(--color-text-faint);
+  }
+
+  /* --- action ------------------------------------------------------------- */
+  /* No trailing arrow. Hovering runs a front across the control — the same
+     gesture the sections and the lattice make, at the scale of one button. */
+  .lx-cta {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    padding: 0.9rem 1.5rem;
+    border: 1px solid var(--color-border);
+    font-family: var(--font-data);
+    font-size: 0.6875rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--color-text);
+    text-decoration: none;
+    transition: color 200ms ease, border-color 200ms ease, box-shadow 200ms ease;
+  }
+  .lx-cta::after {
+    content: '';
+    position: absolute;
+    inset: auto 0 -1px 0;
+    height: 1px;
+    background: var(--fx-excite-gradient);
+    transform: scaleX(0);
+    transform-origin: left center;
+    transition: transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .lx-cta:hover,
+  .lx-cta:focus-visible {
+    color: var(--color-primary);
+    border-color: var(--color-primary);
+    box-shadow: var(--fx-excite-glow);
+  }
+  .lx-cta:hover::after,
+  .lx-cta:focus-visible::after { transform: scaleX(1); }
+  .lx-cta:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 3px;
+  }
+
+  /* --- divider ------------------------------------------------------------ */
+  .lx-divider {
+    position: relative;
+    z-index: 1;
+    max-width: 78rem;
+    margin-inline: auto;
+    padding-inline: clamp(1.25rem, 6vw, 5rem);
+  }
+</style>

@@ -1,0 +1,119 @@
+---
+/* VisionLayers — beat 7. "A standard layer of manufacturing."
+ *
+ * The beat's own body names the company it wants to keep: tolerancing,
+ * inspection, heat treatment. So the diagram is a control-layer stack with
+ * those three marked STANDARD and material state marked NEXT. The row labels
+ * are axis labels for a claim the markdown already makes — not new copy.
+ *
+ * The one coral of this screen is the marker on the row being added. */
+import type { CollectionEntry } from 'astro:content';
+import SectionHeader from './SectionHeader.astro';
+
+export interface Props { beat: CollectionEntry<'beats'> }
+const { beat } = Astro.props;
+const d = beat.data as any;
+
+const layers = [
+  { n: '04', name: 'MATERIAL STATE', status: 'NEXT', next: true },
+  { n: '03', name: 'INSPECTION', status: 'STANDARD', next: false },
+  { n: '02', name: 'HEAT TREATMENT', status: 'STANDARD', next: false },
+  { n: '01', name: 'TOLERANCING', status: 'STANDARD', next: false },
+];
+---
+
+<section class="vis" id={d.slug_id}>
+  <SectionHeader index={d.order} eyebrow={d.eyebrow} />
+
+  <div class="vis-grid">
+    <div class="vis-copy">
+      <h2 class="vis-title">{d.title}</h2>
+      {d.sub && <p class="vis-sub">{d.sub}</p>}
+      <div class="beat-note"><slot /></div>
+    </div>
+
+    <figure class="vis-stack">
+      <figcaption class="vis-cap">CONTROL LAYERS OF MANUFACTURING</figcaption>
+      <ol role="list">
+        {layers.map((l) => (
+          <li class:list={['vis-layer', l.next && 'is-next']}>
+            <span class="vis-n">{l.n}</span>
+            <span class="vis-name">{l.name}</span>
+            <span class="vis-status">{l.status}</span>
+          </li>
+        ))}
+      </ol>
+    </figure>
+  </div>
+</section>
+
+<style>
+  .vis-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+    gap: clamp(2rem, 5vw, 4.5rem);
+    align-items: start;
+  }
+  .vis-title {
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: clamp(1.85rem, 4.6vw, 3.1rem);
+    line-height: 1.06;
+    letter-spacing: -0.03em;
+    text-wrap: balance;
+  }
+  .vis-sub {
+    margin-top: 1.35rem;
+    font-family: var(--font-data);
+    font-size: clamp(0.85rem, 1.5vw, 1rem);
+    letter-spacing: 0.02em;
+    line-height: 1.6;
+    color: var(--color-primary);
+  }
+
+  .vis-stack { margin: 0; }
+  .vis-cap {
+    font-family: var(--font-data);
+    font-size: 0.6rem;
+    letter-spacing: 0.22em;
+    color: var(--color-text-faint);
+    padding-bottom: 0.7rem;
+    border-bottom: 1px solid var(--color-rule);
+  }
+  .vis-stack ol { list-style: none; padding: 0; margin: 0; }
+  .vis-layer {
+    display: grid;
+    grid-template-columns: 3ch minmax(0, 1fr) auto;
+    gap: 1rem;
+    align-items: center;
+    padding: 1.1rem 0.9rem;
+    border-bottom: 1px solid var(--color-border);
+    font-family: var(--font-data);
+    font-size: 0.78rem;
+    letter-spacing: 0.16em;
+    color: var(--color-text-muted);
+  }
+  .vis-n { color: var(--color-text-faint); font-size: 0.68rem; }
+  .vis-status { font-size: 0.6rem; letter-spacing: 0.2em; color: var(--color-text-faint); }
+
+  /* The layer being added. One coral, one screen. */
+  .vis-layer.is-next {
+    position: relative;
+    color: var(--color-text);
+    background: var(--color-plate);
+  }
+  .vis-layer.is-next::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: var(--color-accent);
+  }
+  .vis-layer.is-next .vis-status { color: var(--color-accent); }
+
+  @media (max-width: 860px) {
+    .vis-grid { grid-template-columns: 1fr; }
+  }
+</style>

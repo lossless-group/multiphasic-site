@@ -1,0 +1,181 @@
+---
+import DiptychSection from './DiptychSection.astro';
+import DiptychRow from './DiptychRow.astro';
+import type { CollectionEntry } from 'astro:content';
+
+/* ============================================================================
+ * Beat 3 — The cost. The beat the brief asks to carry the SAME METRIC UNDER
+ * BOTH REGIMES so the delta is visual rather than claimed.
+ *
+ * HOW THE PAIRING WORKS, WITHOUT INVENTING A SINGLE NUMBER
+ * Beat 3's four stats and beat 6's four subtractions are the same four things
+ * in the same order:
+ *   REJECTED PARTS → "Less scrap."
+ *   INSPECTION     → "Less qualification uncertainty."
+ *   OVERDESIGN     → "Less over-design."
+ *   MAINTENANCE    → "Less resource use."
+ * So the right half of each row is not a fabricated "after" figure. It is the
+ * authored answer to that exact cost, carried forward from beat 6. Beat 6 then
+ * runs the same four rows in reverse, with beat 3's number struck out. The
+ * reader meets each row twice and recognises it the second time.
+ *
+ * THE BAR IS THE DELTA. Left: a coral fill sized to the stated figure. Right:
+ * the identical track with the fill gone and a cyan datum where the real
+ * requirement sits. Nothing on the right claims a magnitude.
+ *
+ * This is the one beat whose beam is draggable — the reader can push the seam
+ * back and forth over a comparison they are actively reading.
+ * ========================================================================== */
+
+export interface Props {
+  beat: CollectionEntry<'beats'>;
+  /** Beat 6's item labels, in order. The authored answer to each cost. */
+  answers?: string[];
+  body?: any;
+}
+const { beat, answers = [], body: Body } = Astro.props;
+const d = beat.data as any;
+const stats: any[] = d.stats ?? [];
+
+/**
+ * Encode a stated figure as a bar length. This is a VISUAL ENCODING of the
+ * deck's own numbers, never a new claim:
+ *   "30%"    → 30   (share of parts rejected)
+ *   "50%"    → 50   (share of component cost)
+ *   "2X"     → 50   (at 2x mass, half the section is hedge: 1 - 1/n)
+ *   "50–90%" → 70   (midpoint of the stated range)
+ */
+function magnitude(value: string): number {
+  const v = (value ?? '').trim().toUpperCase();
+  if (v.includes('X')) {
+    const n = parseFloat(v);
+    return Number.isFinite(n) && n > 1 ? (1 - 1 / n) * 100 : 50;
+  }
+  const nums = (v.match(/\d+(?:\.\d+)?/g) ?? []).map(Number);
+  if (!nums.length) return 50;
+  return nums.reduce((a, b) => a + b, 0) / nums.length;
+}
+---
+
+<DiptychSection id={d.slug_id} split={68} size="tall" drag={true}>
+  <DiptychRow seam={false} gap="lg" align="end">
+    <div class="cost-head" slot="past">
+      <p class="dx-eyebrow on-past">{d.eyebrow}</p>
+      <hr class="dx-rule on-past" />
+      <h2 class="dx-h2">{d.title}</h2>
+      <p class="dx-lede on-past cost-sub">{d.sub}</p>
+    </div>
+    <div slot="future">
+      <span class="dx-tag on-future">Once state is specified</span>
+    </div>
+  </DiptychRow>
+
+  {
+    stats.map((s, i) => (
+      <DiptychRow seam={i === 0} gap="md" rule={true} align="start">
+        <div class="cost-stat" slot="past">
+          <p class="dx-eyebrow on-past">{s.label}</p>
+          <div class="cost-figure">
+            {s.qualifier && <span class="dx-qual cost-qual">{s.qualifier}</span>}
+            <span class="dx-num on-past">{s.value}</span>
+          </div>
+          <div class="dx-track on-past" style={`--mag:${magnitude(s.value)}%`}>
+            <span class="dx-fill" />
+          </div>
+          {s.body && <p class="dx-prose on-past cost-body">{s.body}</p>}
+        </div>
+        <div class="cost-answer" slot="future">
+          {answers[i] && <h3 class="dx-h3">{answers[i]}</h3>}
+          <div class="dx-track on-future">
+            <span class="dx-fill" />
+          </div>
+          {i === 0 && <p class="dx-note on-future">Same track. The requirement, without the hedge.</p>}
+        </div>
+      </DiptychRow>
+    ))
+  }
+
+  {
+    Body && (
+      <DiptychRow seam={false} gap="none" align="start">
+        <div slot="past">
+          <div class="dx-note on-past cost-footnote">
+            <Body />
+          </div>
+        </div>
+        <div class="dp-blank" slot="future" />
+      </DiptychRow>
+    )
+  }
+</DiptychSection>
+
+<style>
+  .cost-head {
+    text-align: right;
+  }
+  .cost-head .dx-rule {
+    margin-left: auto;
+  }
+  .cost-sub {
+    margin-left: auto;
+    margin-top: 1.1rem;
+  }
+  .cost-stat {
+    display: grid;
+    grid-template-columns: minmax(9rem, 15rem) minmax(0, 1fr);
+    column-gap: clamp(1rem, 2.5vw, 2.5rem);
+    row-gap: 0.6rem;
+    align-items: start;
+  }
+  .cost-stat > .dx-eyebrow {
+    grid-column: 1;
+    padding-top: 0.35rem;
+  }
+  .cost-figure {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  .cost-stat > .dx-track {
+    grid-column: 1;
+    grid-row: 3;
+    max-width: 15rem;
+  }
+  .cost-body {
+    grid-column: 2;
+    grid-row: 1 / span 3;
+    max-width: 34ch;
+  }
+  .cost-qual {
+    color: var(--color-past-text-muted);
+    margin-bottom: 0.5rem;
+  }
+  .cost-answer > * + * {
+    margin-top: 0.85rem;
+  }
+  .cost-answer .dx-track {
+    max-width: 15rem;
+  }
+  .cost-footnote {
+    margin-top: 1.5rem;
+    opacity: 0.8;
+    max-width: 48ch;
+  }
+
+  @media (max-width: 1180px) {
+    .cost-stat {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .cost-body {
+      grid-column: 1;
+      grid-row: 4;
+    }
+  }
+  @media (max-width: 899px) {
+    .cost-head,
+    .cost-head .dx-rule,
+    .cost-sub {
+      text-align: left;
+      margin-left: 0;
+    }
+  }
+</style>

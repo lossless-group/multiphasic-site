@@ -1,0 +1,152 @@
+---
+import BeamDivider from '../flare/BeamDivider.astro';
+
+/* ============================================================================
+ * DiptychRow — one line of the argument, straddling the beam.
+ *
+ * Rows share the section's `--split-eff`, so every row in a beat lines up on
+ * the same seam and the reader can scan a column down the page. A beat can be
+ * one row (a held statement) or five (the four costs plus a header).
+ *
+ * The `past` slot is left of the beam and may use --color-cost.
+ * The `future` slot is right of the beam and may use --color-gain.
+ * Nothing else is allowed to cross.
+ *
+ * On narrow screens the row stacks — past, seam, future — and the seam turns
+ * horizontal. `seam={false}` suppresses it on rows where a stack of repeated
+ * comparisons would otherwise grow a stack of repeated beams.
+ * ========================================================================== */
+
+export interface Props {
+  /** Vertical alignment of the two cells against each other. */
+  align?: 'start' | 'center' | 'end' | 'stretch';
+  /** Draw the horizontal seam between the cells when stacked. */
+  seam?: boolean;
+  /** Hairline above the row, drawn in each half's own rule color. */
+  rule?: boolean;
+  /** Extra breathing room below. */
+  gap?: 'none' | 'sm' | 'md' | 'lg';
+  class?: string;
+}
+
+const { align = 'start', seam = true, rule = false, gap = 'md', class: className = '' } = Astro.props;
+---
+
+<div
+  class:list={['dpr', className]}
+  data-align={align}
+  data-rule={rule ? 'true' : 'false'}
+  data-gap={gap}
+>
+  <div class="dpr-past"><slot name="past" /></div>
+  {
+    seam && (
+      <div class="dpr-seam" aria-hidden="true">
+        <BeamDivider orientation="horizontal" intensity="low" height="100%" drift={false} />
+      </div>
+    )
+  }
+  <div class="dpr-future"><slot name="future" /></div>
+</div>
+
+<style>
+  .dpr {
+    display: grid;
+    grid-template-columns: var(--split-eff, 50%) minmax(0, 1fr);
+  }
+  .dpr[data-align='start'] {
+    align-items: start;
+  }
+  .dpr[data-align='center'] {
+    align-items: center;
+  }
+  .dpr[data-align='end'] {
+    align-items: end;
+  }
+  .dpr[data-align='stretch'] {
+    align-items: stretch;
+  }
+
+  .dpr[data-gap='none'] {
+    --dpr-space: 0rem;
+  }
+  .dpr[data-gap='sm'] {
+    --dpr-space: clamp(1rem, 2vh, 1.5rem);
+  }
+  .dpr[data-gap='md'] {
+    --dpr-space: clamp(1.75rem, 4vh, 3rem);
+  }
+  .dpr[data-gap='lg'] {
+    --dpr-space: clamp(3rem, 7vh, 5rem);
+  }
+
+  .dpr-past,
+  .dpr-future {
+    padding-bottom: var(--dpr-space, 0);
+    min-width: 0;
+  }
+
+  .dpr-past {
+    padding-left: var(--dp-edge);
+    padding-right: var(--dp-gutter);
+    color: var(--color-past-text);
+  }
+  .dpr-future {
+    padding-left: var(--dp-gutter);
+    padding-right: var(--dp-edge);
+    color: var(--color-future-text);
+    /* content settles in behind the wipe rather than being cut by it */
+    opacity: calc(0.06 + 0.94 * var(--reveal-in, 1));
+    transform: translateX(calc((1 - var(--reveal-in, 1)) * 18px));
+    will-change: opacity, transform;
+  }
+
+  .dpr[data-rule='true'] .dpr-past {
+    border-top: 1px solid var(--color-past-hairline);
+    padding-top: clamp(1rem, 2.2vh, 1.75rem);
+  }
+  .dpr[data-rule='true'] .dpr-future {
+    border-top: 1px solid var(--color-future-hairline);
+    padding-top: clamp(1rem, 2.2vh, 1.75rem);
+  }
+
+  .dpr-seam {
+    display: none;
+  }
+
+  @media (max-width: 899px) {
+    .dpr {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .dpr-past,
+    .dpr-future {
+      padding: clamp(1.75rem, 6vw, 2.75rem) var(--dp-edge);
+      transform: none;
+      opacity: 1;
+    }
+    .dpr-past {
+      background: var(--color-past-bg);
+      background-image: var(--fx-past-texture, none);
+    }
+    .dpr-future {
+      background: var(--color-future-bg);
+    }
+    .dpr[data-rule='true'] .dpr-past,
+    .dpr[data-rule='true'] .dpr-future {
+      border-top: 0;
+    }
+    .dpr-seam {
+      display: block;
+      height: 3px;
+      position: relative;
+      --fx-beam-box: 30px;
+      background: linear-gradient(to bottom, var(--color-past-bg), var(--color-future-bg));
+    }
+    .dpr-seam > :global(.beam) {
+      position: absolute;
+      top: 50%;
+      left: 0;
+      transform: translateY(-50%);
+    }
+  }
+</style>

@@ -1,0 +1,122 @@
+---
+// Beat 5 — METASTATE. The excitation moment.
+//
+// This is the only place on the page that spends the violet -> magenta
+// gradient, and the only beat allowed a full paragraph. Everything else has
+// been rationed so this one can be loud.
+//
+// The 01/02/03 indices come from the content's own `note` field: EXCITE ->
+// GUIDE -> HOLD is a real sequence in time, so ordinal markers carry
+// information here rather than decorating a list.
+
+import PulseEnvelope from '../flare/PulseEnvelope.astro';
+
+export interface Props {
+  data: Record<string, any>;
+  closing?: string;
+}
+const { data, closing } = Astro.props;
+const steps: Array<Record<string, string>> = data.items ?? [];
+---
+
+<div class="mech-head">
+  <span class="mech-glow" aria-hidden="true"></span>
+  <h2 class="lx-display-xl lx-excite lx-rise" id="beat-metastate">{data.title}</h2>
+  {data.sub && <p class="mech-sub lx-rise">{data.sub}</p>}
+</div>
+
+<div class="mech-pulse lx-rise">
+  <PulseEnvelope packet={460} height={40} cycles={11} speed={7} color="var(--color-accent)" />
+</div>
+
+{data.kicker && <p class="mech-kicker lx-rise">{data.kicker}</p>}
+
+<ol class="mech-steps">
+  {steps.map((s) => (
+    <li class="mech-step lx-rise">
+      <span class="mech-index">{s.note}</span>
+      <span class="mech-label">{s.label}</span>
+      {s.body && <p class="lx-body">{s.body}</p>}
+    </li>
+  ))}
+</ol>
+
+{closing && <p class="lx-body mech-closing lx-rise">{closing}</p>}
+
+<style>
+  .mech-head { position: relative; display: flex; flex-direction: column; gap: 1.25rem; }
+
+  /* The emission itself. Zero-opacity in light mode, where the gradient is
+     pigment rather than light and a bloom would only fog the page. */
+  .mech-glow {
+    position: absolute;
+    left: -12%;
+    top: -60%;
+    width: 78%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: radial-gradient(circle, var(--color-accent) 0%, transparent 66%);
+    opacity: var(--fx-glow-opacity);
+    filter: blur(60px);
+    pointer-events: none;
+  }
+  .mech-sub {
+    font-family: var(--font-data);
+    font-size: 0.75rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+  }
+
+  .mech-pulse { margin: clamp(2rem, 5vw, 3.5rem) 0; }
+
+  .mech-kicker {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: clamp(1.25rem, 3.1vw, 2.4rem);
+    line-height: 1.18;
+    letter-spacing: -0.025em;
+    color: var(--color-text);
+    max-width: 26ch;
+  }
+
+  .mech-steps {
+    list-style: none;
+    margin: clamp(3.5rem, 8vw, 6rem) 0 0;
+    padding: 0;
+    display: grid;
+    gap: clamp(2rem, 4vw, 3rem);
+    counter-reset: none;
+  }
+  @media (min-width: 56rem) {
+    .mech-steps { grid-template-columns: repeat(3, 1fr); }
+  }
+
+  .mech-step {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding-top: 1.1rem;
+    border-top: 1px solid var(--color-border);
+  }
+  .mech-index {
+    font-family: var(--font-data);
+    font-size: 0.625rem;
+    letter-spacing: 0.2em;
+    color: var(--color-accent);
+  }
+  .mech-label {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: clamp(1.35rem, 3vw, 2rem);
+    letter-spacing: -0.01em;
+    line-height: 1;
+    color: var(--color-text);
+  }
+  .mech-closing {
+    margin-top: clamp(3rem, 6vw, 4.5rem);
+    max-width: 52ch;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--fx-hairline);
+  }
+</style>

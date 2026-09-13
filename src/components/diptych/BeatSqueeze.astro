@@ -1,0 +1,94 @@
+---
+import DiptychSection from './DiptychSection.astro';
+import DiptychRow from './DiptychRow.astro';
+import type { CollectionEntry } from 'astro:content';
+
+/* ============================================================================
+ * Beat 4 — The squeeze. The widest split on the page: 72% past.
+ *
+ * This is the low point of the argument, and the layout says so before the
+ * prose does. Three frontier programs and their failure modes crowd the left
+ * column while the right is reduced to a single held line on a narrow strip of
+ * navy. The future has not arrived yet; the reader can see how little room it
+ * has. Two beats later the same seam sits at 34%.
+ * ========================================================================== */
+
+export interface Props {
+  beat: CollectionEntry<'beats'>;
+  body?: any;
+}
+const { beat, body: Body } = Astro.props;
+const d = beat.data as any;
+const items: any[] = d.items ?? [];
+---
+
+<DiptychSection id={d.slug_id} split={72} size="tall">
+  <DiptychRow seam={false} gap="lg" align="start">
+    <div slot="past">
+      <p class="dx-eyebrow on-past">{d.eyebrow}</p>
+      <hr class="dx-rule on-past" />
+      <h2 class="dx-h2 squeeze-title">{d.title}</h2>
+      <p class="dx-lede on-past squeeze-sub">{d.sub}</p>
+    </div>
+    <div slot="future">
+      <hr class="dx-rule on-future" />
+      {
+        Body && (
+          <div class="dx-prose on-future squeeze-held">
+            <Body />
+          </div>
+        )
+      }
+    </div>
+  </DiptychRow>
+
+  <DiptychRow gap="none" align="start" seam={false}>
+    <ol class="squeeze-list" slot="past">
+      {
+        items.map((it) => (
+          <li class="squeeze-item">
+            <p class="dx-eyebrow on-past">{it.label}</p>
+            <p class="dx-prose on-past">{it.body}</p>
+            {it.note && <p class="dx-note squeeze-note">{it.note}</p>}
+          </li>
+        ))
+      }
+    </ol>
+    <div class="dp-blank" slot="future" />
+  </DiptychRow>
+</DiptychSection>
+
+<style>
+  .squeeze-title {
+    max-width: 20ch;
+  }
+  .squeeze-sub {
+    margin-top: 1.1rem;
+    max-width: 52ch;
+  }
+  .dx-prose.squeeze-held {
+    font-size: clamp(1rem, 1.2vw, 1.2rem);
+    line-height: 1.5;
+    color: var(--color-future-text);
+    max-width: 24ch;
+  }
+  .squeeze-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+    gap: clamp(1.5rem, 3vw, 2.75rem);
+    border-top: 1px solid var(--color-past-hairline);
+    padding-top: clamp(1.25rem, 3vh, 2rem);
+  }
+  .squeeze-item > * + * {
+    margin-top: 0.7rem;
+  }
+  .squeeze-note {
+    color: var(--color-cost-ink);
+    border-top: 1px solid var(--color-past-rule);
+    padding-top: 0.6rem;
+    text-transform: uppercase;
+  }
+</style>

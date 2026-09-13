@@ -1,0 +1,142 @@
+---
+import Wordmark from '../basics/Wordmark.astro';
+import ModeToggle from '../ui/ModeToggle.astro';
+import BeamDivider from '../flare/BeamDivider.astro';
+
+/* ============================================================================
+ * DiptychChrome — the page header, which is itself a diptych.
+ *
+ * Paper on the left with the mark, navy on the right with the mode toggle and
+ * the jump links, and the same seam of light between them. The reader meets the
+ * conceit before they meet a single word of argument.
+ *
+ * The right half re-points --color-text / --color-border / --color-primary to
+ * the future half's values so the shared ModeToggle (which reads only those
+ * semantic tokens) lands correctly on navy without being modified.
+ * ========================================================================== */
+
+export interface Props {
+  links?: { label: string; href: string }[];
+}
+const { links = [] } = Astro.props;
+---
+
+<a class="chrome-skip" href="#thesis">Skip to the argument</a>
+
+<header class="chrome">
+  <div class="chrome-past">
+    <Wordmark size={26} tagline />
+  </div>
+
+  <div class="chrome-beam" aria-hidden="true">
+    <BeamDivider orientation="vertical" intensity="low" height="100%" />
+  </div>
+
+  <div class="chrome-future">
+    <nav class="chrome-nav" aria-label="Sections">
+      {links.map((l) => <a href={l.href}>{l.label}</a>)}
+    </nav>
+    <ModeToggle />
+  </div>
+</header>
+
+<style>
+  .chrome {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    display: grid;
+    grid-template-columns: 50% minmax(0, 1fr);
+    align-items: center;
+    background: var(--color-past-bg);
+    border-bottom: 1px solid var(--color-past-hairline);
+  }
+
+  .chrome-past {
+    padding: 0.85rem var(--dp-gutter) 0.85rem var(--dp-edge);
+    color: var(--color-past-text);
+    /* Same reason as BeatAsk: the mark must not carry the gain colour on the
+     * paper side. Re-pointed to neutral past ink in every mode. */
+    --color-primary: var(--color-past-text);
+  }
+
+  .chrome-beam {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    width: 60px;
+    --fx-beam-box: 60px;
+    transform: translateX(-50%);
+    pointer-events: none;
+  }
+
+  .chrome-future {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: clamp(0.75rem, 2vw, 2rem);
+    align-self: stretch;
+    padding: 0.85rem var(--dp-edge) 0.85rem var(--dp-gutter);
+    background: var(--color-future-bg);
+
+    /* the shared toggle reads semantic tokens; re-point them for this ground */
+    --color-text: var(--color-future-text);
+    --color-border: var(--color-future-hairline);
+    --color-primary: var(--color-gain);
+    color: var(--color-future-text);
+  }
+
+  .chrome-nav {
+    display: flex;
+    gap: clamp(0.7rem, 1.6vw, 1.6rem);
+  }
+  .chrome-nav a {
+    font-family: var(--font-data);
+    font-size: 0.68rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    text-decoration: none;
+    color: var(--color-future-text-muted);
+    padding-block: 0.25rem;
+    border-bottom: 1px solid transparent;
+    transition: color 140ms ease, border-color 140ms ease;
+  }
+  .chrome-nav a:hover {
+    color: var(--color-gain);
+    border-bottom-color: var(--color-gain);
+  }
+
+  .chrome-skip {
+    position: absolute;
+    left: -9999px;
+    top: 0;
+    z-index: 60;
+    font-family: var(--font-data);
+    font-size: 0.75rem;
+    padding: 0.75rem 1rem;
+    background: var(--color-future-bg);
+    color: var(--color-future-text);
+  }
+  .chrome-skip:focus {
+    left: 0;
+  }
+
+  @media (max-width: 899px) {
+    .chrome {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .chrome-beam {
+      display: none;
+    }
+    .chrome-future {
+      justify-content: space-between;
+      border-top: 1px solid var(--color-future-hairline);
+      padding-block: 0.6rem;
+    }
+    .chrome-nav {
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+  }
+</style>

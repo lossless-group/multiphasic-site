@@ -1,0 +1,100 @@
+---
+/* ContactPanel — beat 8. Deliberately the quietest plate on the page.
+ * A ruled panel, one instruction, one address. The footer underneath carries
+ * the document furniture a report ends with. No coral. */
+import type { CollectionEntry } from 'astro:content';
+import SectionHeader from './SectionHeader.astro';
+
+export interface Props {
+  beat: CollectionEntry<'beats'>;
+  docId: string;
+  revision: string;
+}
+const { beat, docId, revision } = Astro.props;
+const d = beat.data as any;
+---
+
+<section class="ask" id={d.slug_id}>
+  <SectionHeader index={d.order} eyebrow={d.eyebrow} />
+
+  <div class="ask-plate">
+    <h2 class="ask-title">{d.title}</h2>
+    {d.sub && <p class="ask-sub">{d.sub}</p>}
+
+    {d.cta_label && (
+      <a class="ask-cta" href={d.cta_href ?? 'mailto:hello@multiphasic.com'}>
+        <span>{d.cta_label}</span>
+        <span aria-hidden="true">&rarr;</span>
+      </a>
+    )}
+
+    <div class="beat-note ask-note"><slot /></div>
+  </div>
+
+  <footer class="ask-foot">
+    <span>{docId}</span>
+    <span>REV {revision}</span>
+    <span class="ask-foot-note">Figures shown are directional industry ranges.</span>
+  </footer>
+</section>
+
+<style>
+  .ask-plate {
+    border: 1px solid var(--color-border);
+    background: var(--color-plate);
+    padding: clamp(1.75rem, 4.5vw, 3.25rem);
+  }
+  .ask-title {
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: clamp(1.6rem, 4vw, 2.6rem);
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+    max-width: 22ch;
+    text-wrap: balance;
+  }
+  .ask-sub {
+    margin-top: 1.25rem;
+    max-width: 50ch;
+    font-size: 1rem;
+    line-height: 1.6;
+    color: var(--color-text-muted);
+  }
+  .ask-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.9rem;
+    margin-top: 2rem;
+    padding: 0.8rem 1.35rem;
+    border: 1px solid var(--color-primary);
+    font-family: var(--font-data);
+    font-size: 0.78rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    text-decoration: none;
+    color: var(--color-primary);
+    transition: background-color 180ms ease, color 180ms ease;
+  }
+  .ask-cta:hover { background: var(--color-primary); color: var(--color-background); }
+  .ask-cta:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 3px; }
+
+  .ask-note { margin-top: 2rem; padding-top: 1.25rem; border-top: 1px solid var(--color-border); }
+
+  .ask-foot {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem 2rem;
+    margin-top: 2rem;
+    padding-top: 1.1rem;
+    border-top: 1px solid var(--color-border);
+    font-family: var(--font-data);
+    font-size: 0.63rem;
+    letter-spacing: 0.18em;
+    color: var(--color-text-faint);
+  }
+  .ask-foot-note { margin-left: auto; letter-spacing: 0.08em; }
+
+  @media (max-width: 640px) {
+    .ask-foot-note { margin-left: 0; }
+  }
+</style>

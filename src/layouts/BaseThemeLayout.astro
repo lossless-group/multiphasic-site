@@ -1,0 +1,21 @@
+---
+import BoilerPlateHTML from './BoilerPlateHTML.astro';
+import '../styles/global.css';
+
+export interface Props {
+  title?: string;
+  description?: string;
+  theme?: 'instrument' | 'lattice' | 'diptych';
+  mode?: 'light' | 'dark' | 'vibrant';
+}
+
+const { title, description, theme = 'instrument', mode = 'dark' } = Astro.props;
+---
+
+<BoilerPlateHTML title={title} description={description} theme={theme} mode={mode}>
+  <slot />
+  <script>
+    import '../utils/theme-switcher.js';
+    import '../utils/mode-switcher.js';
+  </script>
+</BoilerPlateHTML>

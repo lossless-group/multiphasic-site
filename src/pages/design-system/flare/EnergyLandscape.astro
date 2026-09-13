@@ -1,0 +1,217 @@
+---
+/* Flare catalog — EnergyLandscape.
+ * Direction A · theme `instrument`. Props, variants, and the reduced-motion
+ * fallback shown as its own specimen rather than described in prose. */
+import BaseThemeLayout from '../../../layouts/BaseThemeLayout.astro';
+import Wordmark from '../../../components/basics/Wordmark.astro';
+import ModeToggle from '../../../components/ui/ModeToggle.astro';
+import EnergyLandscape from '../../../components/flare/EnergyLandscape.astro';
+
+const props = [
+  ['height', 'number', '460', 'Caps the rendered height. The SVG always fills its container width.'],
+  ['trace', 'string', 'var(--color-trace)', 'Stroke colour of the energy curve.'],
+  ['accent', 'string', 'var(--color-accent)', 'The settled METASTATE marker and its label — the one coral per screen.'],
+  ['muted', 'string', 'var(--color-text-muted)', 'Resting marker, axis labels, well annotations.'],
+  ['motion', "'auto' | 'static'", "'auto'", "'auto' drives from scroll position. 'static' renders the finished plate immediately."],
+  ['replay', 'boolean', 'false', 'Adds a mono replay control. Off on the marketing page, on here.'],
+  ['caption', 'string', '(schematic note)', 'Printed under the plot, above the rule.'],
+  ['class', 'string', "''", 'Passed through to the figure element.'],
+];
+---
+
+<BaseThemeLayout title="Flare — EnergyLandscape" theme="instrument" mode="dark">
+  <header class="ds-chrome">
+    <Wordmark size={26} />
+    <span class="ds-crumb">DESIGN SYSTEM / FLARE / ENERGYLANDSCAPE</span>
+    <ModeToggle />
+  </header>
+
+  <main class="ds">
+    <p class="ds-eyebrow">DIRECTION A · THEME INSTRUMENT</p>
+    <h1>EnergyLandscape</h1>
+    <p class="ds-lede">
+      A potential-energy curve over a configuration coordinate. The marker rests in the
+      shallow local minimum the metal inherited from its thermal history. A tuned pulse
+      arrives, the landscape deforms, and the marker settles into a deeper, narrower
+      well. Both curves are sampled from the same analytic potential at the same 140
+      points, so the browser can interpolate the <code>d</code> property directly — the
+      deformation is a CSS transition, not a tween library.
+    </p>
+
+    <section class="ds-block">
+      <h2>01 / Default — scroll-driven</h2>
+      <p class="ds-note">
+        Two IntersectionObserver thresholds: 28% visible draws the axes and the inherited
+        curve, 62% visible fires the pulse. One-shot. Scroll it out and back to confirm it
+        does not re-trigger.
+      </p>
+      <div class="ds-stage"><EnergyLandscape replay /></div>
+    </section>
+
+    <section class="ds-block">
+      <h2>02 / motion="static"</h2>
+      <p class="ds-note">
+        The finished plate. Identical to what a reduced-motion visitor sees: deformed
+        curve, inherited curve retained as a dashed ghost, the vacated site ringed, both
+        wells labelled, ΔE bracketed. Nothing about the argument is carried by motion.
+      </p>
+      <div class="ds-stage"><EnergyLandscape motion="static" height={380} /></div>
+    </section>
+
+    <section class="ds-block">
+      <h2>03 / Colour overrides</h2>
+      <p class="ds-note">
+        Colour props take any CSS colour, but on the marketing page they are left at
+        their token defaults so the figure follows the mode. Here the trace is forced to
+        the muted token to show the diagram surviving without its signal colour.
+      </p>
+      <div class="ds-stage">
+        <EnergyLandscape
+          motion="static"
+          height={320}
+          trace="var(--color-text-muted)"
+          accent="var(--color-primary)"
+          caption="Trace forced to --color-text-muted, accent to --color-primary."
+        />
+      </div>
+    </section>
+
+    <section class="ds-block">
+      <h2>04 / Props</h2>
+      <table class="ds-table">
+        <thead>
+          <tr><th>PROP</th><th>TYPE</th><th>DEFAULT</th><th>NOTE</th></tr>
+        </thead>
+        <tbody>
+          {props.map(([n, t, d, note]) => (
+            <tr>
+              <td class="ds-mono ds-key">{n}</td>
+              <td class="ds-mono">{t}</td>
+              <td class="ds-mono">{d}</td>
+              <td>{note}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </section>
+
+    <section class="ds-block">
+      <h2>05 / Contract</h2>
+      <ul class="ds-list">
+        <li>Reads only kebab-case semantic tokens. No <code>--color__*</code> anywhere.</li>
+        <li>All geometry is computed at build time. The client ships one observer per instance.</li>
+        <li>No WebGL, no GSAP, no animation library. SVG plus CSS transitions.</li>
+        <li><code>prefers-reduced-motion: reduce</code> resolves to the specimen in block 02.</li>
+        <li>Multiple instances on one page are independent — the replay control is per figure.</li>
+      </ul>
+    </section>
+  </main>
+</BaseThemeLayout>
+
+<style is:global>
+  .ds-chrome {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 0.9rem clamp(1rem, 4vw, 3rem);
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-background);
+  }
+  .ds-crumb {
+    margin-left: auto;
+    font-family: var(--font-data);
+    font-size: 0.62rem;
+    letter-spacing: 0.18em;
+    color: var(--color-text-faint);
+  }
+  .ds {
+    max-width: 66rem;
+    margin: 0 auto;
+    padding: clamp(2.5rem, 6vw, 4.5rem) clamp(1rem, 4vw, 3rem) 6rem;
+  }
+  .ds-eyebrow {
+    font-family: var(--font-data);
+    font-size: 0.66rem;
+    letter-spacing: 0.24em;
+    color: var(--color-primary);
+    margin-bottom: 1rem;
+  }
+  .ds h1 {
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: clamp(2rem, 5vw, 3rem);
+    letter-spacing: -0.03em;
+    line-height: 1.05;
+  }
+  .ds-lede {
+    margin-top: 1.25rem;
+    max-width: 62ch;
+    color: var(--color-text-muted);
+    line-height: 1.65;
+  }
+  .ds-block {
+    margin-top: clamp(3rem, 7vw, 5rem);
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--color-rule);
+  }
+  .ds-block h2 {
+    font-family: var(--font-data);
+    font-weight: 500;
+    font-size: 0.76rem;
+    letter-spacing: 0.2em;
+    color: var(--color-primary);
+    margin-bottom: 0.9rem;
+  }
+  .ds-note {
+    max-width: 62ch;
+    color: var(--color-text-muted);
+    font-size: 0.93rem;
+    line-height: 1.65;
+    margin-bottom: 1.75rem;
+  }
+  .ds-stage {
+    border: 1px solid var(--color-border);
+    background: var(--color-plate);
+    padding: clamp(1rem, 3vw, 2rem);
+  }
+  .ds code {
+    font-family: var(--font-data);
+    font-size: 0.88em;
+    color: var(--color-primary);
+  }
+  .ds-table { width: 100%; border-collapse: collapse; }
+  .ds-table th {
+    text-align: left;
+    font-family: var(--font-data);
+    font-weight: 400;
+    font-size: 0.62rem;
+    letter-spacing: 0.2em;
+    color: var(--color-text-faint);
+    padding: 0 1rem 0.65rem 0;
+    border-bottom: 1px solid var(--color-rule);
+  }
+  .ds-table td {
+    padding: 0.85rem 1rem 0.85rem 0;
+    border-bottom: 1px solid var(--color-border);
+    font-size: 0.9rem;
+    line-height: 1.55;
+    color: var(--color-text-muted);
+    vertical-align: top;
+  }
+  .ds-mono { font-family: var(--font-data); font-size: 0.76rem !important; white-space: nowrap; }
+  .ds-key { color: var(--color-text); }
+  .ds-list { margin: 0; padding-left: 1.2rem; color: var(--color-text-muted); }
+  .ds-list li { margin-bottom: 0.6rem; line-height: 1.6; font-size: 0.93rem; }
+
+  @media (max-width: 700px) {
+    .ds-crumb { display: none; }
+    .ds-table, .ds-table tbody, .ds-table tr, .ds-table td { display: block; width: 100%; }
+    .ds-table thead { display: none; }
+    .ds-table tr { padding: 0.9rem 0; border-bottom: 1px solid var(--color-border); }
+    .ds-table td { border: 0; padding: 0.15rem 0; }
+    .ds-mono { white-space: normal; }
+  }
+</style>

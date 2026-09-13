@@ -1,0 +1,372 @@
+---
+/* ============================================================================
+ * DIRECTION A — "Phase Diagram"
+ *
+ * The page is a scientific instrument readout: a certified materials test
+ * report you could hand to a procurement engineer at a primes-tier supplier.
+ * Its structural spine is an axis rail down the left edge — a hairline with
+ * a tick and an index plate per beat — because the eight beats are an ordered
+ * argument and the reader needs to know their coordinate in it.
+ *
+ * Hero line: the frontmatter `title`, "From materials processing to materials
+ * programming." Of the five candidates it is the one that states a category
+ * change without asking to be admired, which is the register this direction
+ * is buying. The most argumentative line ("Manufacturing controls shape to
+ * the micron. It controls state by inheritance.") is already in the beat's
+ * `kicker` and is set below the plate as the report's finding.
+ *
+ * Coral budget, screen by screen:
+ *   01 hero    · the rule under the headline (deck-native)
+ *   02 gap     · none
+ *   03 cost    · the INSPECTION magnitude, and nothing else
+ *   04 squeeze · none
+ *   05 mechanism · the METASTATE marker inside EnergyLandscape
+ *   06 result  · none
+ *   07 vision  · the layer being added
+ *   08 ask     · none
+ * ========================================================================== */
+import { getCollection, render } from 'astro:content';
+import BaseThemeLayout from '../layouts/BaseThemeLayout.astro';
+import Wordmark from '../components/basics/Wordmark.astro';
+import ModeToggle from '../components/ui/ModeToggle.astro';
+
+import HeroReadout from '../components/instrument/HeroReadout.astro';
+import GapPanel from '../components/instrument/GapPanel.astro';
+import CostTable from '../components/instrument/CostTable.astro';
+import SqueezeLedger from '../components/instrument/SqueezeLedger.astro';
+import MechanismBeat from '../components/instrument/MechanismBeat.astro';
+import SubtractionList from '../components/instrument/SubtractionList.astro';
+import VisionLayers from '../components/instrument/VisionLayers.astro';
+import ContactPanel from '../components/instrument/ContactPanel.astro';
+
+const beats = (await getCollection('beats')).sort((a, b) => a.data.order - b.data.order);
+const by = (id: string) => beats.find((b) => (b.data as any).slug_id === id)!;
+
+const thesis = by('thesis');
+const gap = by('the-gap');
+const cost = by('the-cost');
+const squeeze = by('the-squeeze');
+const mechanism = by('metastate');
+const result = by('the-result');
+const vision = by('vision');
+const ask = by('contact');
+
+/* Each beat's markdown body is rendered where it adds something the
+ * frontmatter doesn't already say. */
+const { Content: ThesisBody } = await render(thesis);
+const { Content: GapBody } = await render(gap);
+const { Content: CostBody } = await render(cost);
+const { Content: SqueezeBody } = await render(squeeze);
+const { Content: MechanismBody } = await render(mechanism);
+const { Content: ResultBody } = await render(result);
+const { Content: VisionBody } = await render(vision);
+const { Content: AskBody } = await render(ask);
+
+/* Hero spec strip. Every value is derived from another beat rather than
+ * written here, so the plate can't drift away from the argument. */
+const spec = [
+  { label: 'SYSTEM', value: (mechanism.data as any).title },
+  { label: 'APPLIED', value: 'In-process, on the line' },
+  { label: 'STATUS', value: 'Scoped pilots open' },
+];
+
+const DOC_ID = 'MULTIPHASIC CORPORATION · MATERIAL STATE SOLUTIONS';
+const REVISION = 'A';
+
+const nav = [
+  { id: 'the-gap', n: '02', label: 'THE GAP' },
+  { id: 'the-cost', n: '03', label: 'THE COST' },
+  { id: 'metastate', n: '05', label: 'METASTATE' },
+  { id: 'contact', n: '08', label: 'CONTACT' },
+];
+---
+
+<BaseThemeLayout
+  title="Multiphasic — from materials processing to materials programming"
+  theme="instrument"
+  mode="dark"
+>
+  <script is:inline>
+    // Reveal animations only exist when JS is here to run them. Set the flag
+    // before first paint so nothing is ever left hidden by a failed script.
+    document.documentElement.classList.add('has-reveal');
+  </script>
+
+  <a class="skip" href="#thesis">Skip to content</a>
+
+  <div class="instr">
+    <header class="masthead">
+      <Wordmark size={28} tagline />
+      <nav class="masthead-nav" aria-label="Sections">
+        {nav.map((n) => (
+          <a href={`#${n.id}`}><span class="mn-n">{n.n}</span>{n.label}</a>
+        ))}
+      </nav>
+      <div class="masthead-right">
+        <span class="masthead-doc">{DOC_ID}</span>
+        <ModeToggle />
+      </div>
+    </header>
+
+    <main class="sheet">
+      <div class="rail" aria-hidden="true"></div>
+
+      <div class="beat beat-hero">
+        <HeroReadout beat={thesis} spec={spec}><ThesisBody /></HeroReadout>
+      </div>
+
+      <div class="beat"><GapPanel beat={gap}><GapBody /></GapPanel></div>
+      <div class="beat"><CostTable beat={cost}><CostBody /></CostTable></div>
+      <div class="beat"><SqueezeLedger beat={squeeze}><SqueezeBody /></SqueezeLedger></div>
+      <div class="beat beat-wide"><MechanismBeat beat={mechanism}><MechanismBody /></MechanismBeat></div>
+      <div class="beat"><SubtractionList beat={result}><ResultBody /></SubtractionList></div>
+      <div class="beat"><VisionLayers beat={vision}><VisionBody /></VisionLayers></div>
+      <div class="beat">
+        <ContactPanel beat={ask} docId={DOC_ID} revision={REVISION}><AskBody /></ContactPanel>
+      </div>
+    </main>
+  </div>
+</BaseThemeLayout>
+
+<script>
+  // Two behaviours, both one-shot, both scroll-driven. This is the entire
+  // motion budget for the page outside the two flare components.
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // 1. Rules draw themselves in (and, in beat 6, out).
+  const rules = document.querySelectorAll<HTMLElement>('[data-reveal]');
+  if (rules.length) {
+    if (reduce) {
+      rules.forEach((el) => el.classList.add('is-in'));
+    } else {
+      const io = new IntersectionObserver(
+        (entries) => {
+          for (const e of entries) {
+            if (e.isIntersecting) {
+              e.target.classList.add('is-in');
+              io.unobserve(e.target);
+            }
+          }
+        },
+        { threshold: 0.6, rootMargin: '0px 0px -8% 0px' }
+      );
+      rules.forEach((el) => io.observe(el));
+    }
+  }
+
+  // 2. Values count up once. Every numeric run inside the string is animated
+  //    independently so "50–90%" counts as a range and "2X" keeps its unit.
+  const nums = document.querySelectorAll<HTMLElement>('[data-countup]');
+  if (nums.length && !reduce) {
+    const ease = (t: number) => 1 - Math.pow(1 - t, 3);
+
+    const run = (el: HTMLElement) => {
+      const target = el.dataset.countup ?? el.textContent ?? '';
+      const parts = target.match(/(\d+|\D+)/g) ?? [];
+      const targets = parts.map((p) => (/^\d+$/.test(p) ? parseInt(p, 10) : null));
+      if (!targets.some((t) => t !== null)) return;
+
+      const DURATION = 760;
+      const start = performance.now();
+      const tick = (now: number) => {
+        const t = Math.min(1, (now - start) / DURATION);
+        const k = ease(t);
+        el.textContent = parts
+          .map((p, i) => (targets[i] === null ? p : String(Math.round(targets[i]! * k))))
+          .join('');
+        if (t < 1) requestAnimationFrame(tick);
+        else el.textContent = target;
+      };
+      requestAnimationFrame(tick);
+    };
+
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (e.isIntersecting) {
+            run(e.target as HTMLElement);
+            io.unobserve(e.target);
+          }
+        }
+      },
+      { threshold: 0.9 }
+    );
+    nums.forEach((el) => io.observe(el));
+  }
+</script>
+
+<style>
+  .skip {
+    position: absolute;
+    left: -9999px;
+    top: 0;
+    z-index: 20;
+    padding: 0.75rem 1rem;
+    background: var(--color-primary);
+    color: var(--color-background);
+    font-family: var(--font-data);
+    font-size: 0.75rem;
+  }
+  .skip:focus { left: 0; }
+
+  /* The graticule. Near-flat, one pitch, no gradient anywhere on the page. */
+  .instr {
+    position: relative;
+    min-height: 100vh;
+    background-image:
+      linear-gradient(to right, var(--color-grid) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--color-grid) 1px, transparent 1px);
+    background-size: var(--grid-pitch) var(--grid-pitch);
+    background-position: center top;
+  }
+  .instr::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background: radial-gradient(90% 60% at 50% -10%, var(--fx-bloom), transparent 70%);
+  }
+
+  /* ---------------------------------------------------------- masthead --- */
+  .masthead {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 0.9rem clamp(1rem, 4vw, 3rem);
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-background);
+  }
+  .masthead-nav {
+    display: flex;
+    gap: 1.75rem;
+    margin-left: auto;
+  }
+  .masthead-nav a {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.6ch;
+    font-family: var(--font-data);
+    font-size: 0.68rem;
+    letter-spacing: 0.16em;
+    text-decoration: none;
+    color: var(--color-text-muted);
+    padding-bottom: 2px;
+    border-bottom: 1px solid transparent;
+  }
+  .masthead-nav a:hover { color: var(--color-text); border-bottom-color: var(--color-primary); }
+  .masthead-nav a:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 3px; }
+  .mn-n { color: var(--color-primary); }
+
+  .masthead-right { display: flex; align-items: center; gap: 1.25rem; }
+  .masthead-doc {
+    font-family: var(--font-data);
+    font-size: 0.6rem;
+    letter-spacing: 0.18em;
+    color: var(--color-text-faint);
+    white-space: nowrap;
+  }
+
+  @media (max-width: 1080px) {
+    .masthead-nav { display: none; }
+    .masthead-right { margin-left: auto; }
+  }
+  @media (max-width: 560px) {
+    .masthead-doc { display: none; }
+  }
+
+  /* ------------------------------------------------------- the axis rail -- */
+  .sheet {
+    position: relative;
+    z-index: 1;
+    max-width: var(--page-measure);
+    margin: 0 auto;
+    padding: 0 clamp(1rem, 4vw, 3rem) clamp(4rem, 10vw, 8rem);
+  }
+  .rail {
+    position: absolute;
+    top: 0;
+    bottom: clamp(4rem, 10vw, 8rem);
+    left: clamp(1rem, 4vw, 3rem);
+    width: 1px;
+    background: linear-gradient(
+      to bottom,
+      transparent,
+      var(--color-border) 4rem,
+      var(--color-border) calc(100% - 6rem),
+      transparent
+    );
+  }
+
+  .beat {
+    position: relative;
+    padding-left: var(--rail-width);
+    padding-block: clamp(3.5rem, 8vw, 7rem);
+  }
+  .beat + .beat { border-top: 1px solid var(--color-border); }
+  .beat-hero { padding-block-start: 0; }
+  /* Beat 5 breaks the rail — the diagram gets the full sheet. */
+  .beat-wide { padding-left: 0; }
+
+  /* Tick where each beat meets the rail. */
+  .beat + .beat::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: -1px;
+    width: 17px;
+    height: 1px;
+    background: var(--color-primary);
+  }
+
+  @media (max-width: 900px) {
+    .rail { display: none; }
+    .beat { padding-left: 0; }
+  }
+</style>
+
+<style is:global>
+  /* Shared beat typography. Global because these classes live inside the
+   * eight section components, which carry their own scope hashes. Every
+   * selector is anchored to .instr so nothing leaks to sibling directions. */
+  .instr .beat-title {
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: clamp(1.75rem, 4.4vw, 3rem);
+    line-height: 1.08;
+    letter-spacing: -0.032em;
+    max-width: 24ch;
+    text-wrap: balance;
+  }
+  .instr .beat-sub {
+    margin-top: 1.15rem;
+    max-width: 58ch;
+    font-size: clamp(0.98rem, 1.6vw, 1.12rem);
+    line-height: 1.6;
+    color: var(--color-text-muted);
+  }
+  .instr .beat-note {
+    margin-top: clamp(1.75rem, 3.5vw, 2.5rem);
+    max-width: 62ch;
+    font-size: 0.95rem;
+    line-height: 1.68;
+    color: var(--color-text-muted);
+  }
+  .instr .beat-note p { margin: 0 0 0.9rem; }
+  .instr .beat-note p:last-child { margin-bottom: 0; }
+
+  /* Beat 3's body is a source note, so it is set as one. */
+  .instr .beat-note.is-footnote {
+    font-family: var(--font-data);
+    font-size: 0.68rem;
+    letter-spacing: 0.1em;
+    color: var(--color-text-faint);
+    margin-top: 1.25rem;
+  }
+
+  .instr ::selection { background: var(--color-primary); color: var(--color-background); }
+  .instr a:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 3px; }
+</style>

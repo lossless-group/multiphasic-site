@@ -1,0 +1,277 @@
+---
+import { getCollection, render } from 'astro:content';
+import BaseThemeLayout from '../layouts/BaseThemeLayout.astro';
+import DiptychType from '../components/diptych/DiptychType.astro';
+import DiptychChrome from '../components/diptych/DiptychChrome.astro';
+import BeatHero from '../components/diptych/BeatHero.astro';
+import BeatGap from '../components/diptych/BeatGap.astro';
+import BeatCost from '../components/diptych/BeatCost.astro';
+import BeatSqueeze from '../components/diptych/BeatSqueeze.astro';
+import BeatMechanism from '../components/diptych/BeatMechanism.astro';
+import BeatResult from '../components/diptych/BeatResult.astro';
+import BeatVision from '../components/diptych/BeatVision.astro';
+import BeatAsk from '../components/diptych/BeatAsk.astro';
+
+/* ============================================================================
+ * DIRECTION C — "Before the Beam"
+ *
+ * The site as a sustained argument in two columns. Left of the beam is
+ * inherited: whatever the metal's thermal history left behind, and every cost
+ * that gets paid to hedge against it. Right of the beam is specified. The seam
+ * between them is the beam of light that rejoins the deck's fractured bridge.
+ *
+ * THE SPLIT IS THE ARGUMENT. The seam does not sit at 50% down the page. It is
+ * pushed wide by the cost, held dead centre at the mechanism, and walks back
+ * until the past is a margin:
+ *
+ *   1 thesis     50   even. the two halves stated.
+ *   2 the gap    50   even. the reader learns the colour code.
+ *   3 the cost   68   the past swells.
+ *   4 squeeze    72   the low point. the future has almost no room.
+ *   5 METASTATE  50   the pivot. the seam locks and the product spans it.
+ *   6 the result 34   the four costs cancelled.
+ *   7 the vision 26   the past reduced to a margin.
+ *   8 the ask    30   quiet.
+ *
+ * WHERE COPY COMES FROM. Every word on this page is authored in
+ * src/content/beats/*.md. This file arranges; it does not write. The two
+ * cross-beat pairings — beat 3's stats answered by beat 6's subtractions, and
+ * beat 6's subtractions cancelling beat 3's figures — are wired here because
+ * this is the only place that holds both beats at once.
+ * ========================================================================== */
+
+const beats = (await getCollection('beats')).sort((a, b) => a.data.order - b.data.order);
+const rendered = await Promise.all(beats.map((b) => render(b)));
+const byId = Object.fromEntries(beats.map((b, i) => [b.data.slug_id, { beat: b, Body: rendered[i].Content }]));
+
+const cost = byId['the-cost'];
+const result = byId['the-result'];
+const costStats = (cost?.beat.data as any)?.stats ?? [];
+const resultItems = (result?.beat.data as any)?.items ?? [];
+
+/* Jump links, taken from the beats' own eyebrows. */
+const navSlugs = ['the-gap', 'the-cost', 'metastate', 'the-result', 'contact'];
+const links = navSlugs
+  .filter((s) => byId[s])
+  .map((s) => ({ label: (byId[s].beat.data as any).eyebrow ?? s, href: `#${s}` }));
+---
+
+<BaseThemeLayout
+  title="Multiphasic — from materials processing to materials programming"
+  description="Manufacturing controls shape to the micron. It controls state by inheritance. Multiphasic applies tuned ultrafast laser excitation during manufacture to guide the atomic lattice into metastable states beyond the reach of any furnace."
+  theme="diptych"
+  mode="light"
+>
+  <DiptychType />
+  <DiptychChrome links={links} />
+
+  <main>
+    <BeatHero beat={byId['thesis'].beat} body={byId['thesis'].Body} />
+    <BeatGap beat={byId['the-gap'].beat} body={byId['the-gap'].Body} />
+    <BeatCost
+      beat={cost.beat}
+      body={cost.Body}
+      answers={resultItems.map((it: any) => it.label)}
+    />
+    <BeatSqueeze beat={byId['the-squeeze'].beat} body={byId['the-squeeze'].Body} />
+    <BeatMechanism beat={byId['metastate'].beat} body={byId['metastate'].Body} />
+    <BeatResult beat={result.beat} body={result.Body} costs={costStats} />
+    <BeatVision beat={byId['vision'].beat} body={byId['vision'].Body} />
+    <BeatAsk beat={byId['contact'].beat} body={byId['contact'].Body} />
+  </main>
+
+  <footer class="dp-foot">
+    <span class="dx-note">Direction C &middot; Before the Beam</span>
+    <nav aria-label="Reference pages">
+      <a href="/design-system/flare/BeamDivider">BeamDivider</a>
+      <a href="/design-system/flare/OverdesignMass">OverdesignMass</a>
+      <a href="/">All directions</a>
+    </nav>
+  </footer>
+</BaseThemeLayout>
+
+<script>
+  /* ==========================================================================
+   * The scroll driver.
+   *
+   * Each diptych owns two custom properties:
+   *   --reveal-x   where the beam sits, in px from the section's left edge
+   *   --reveal-in  0..1, how far the future half's content has settled in
+   *
+   * As a section rises through the viewport the beam slides from a band to the
+   * RIGHT of the seam back onto the seam, and the navy ground follows it in.
+   * Content columns never move — only the ground clip and the beam travel, so
+   * no paragraph ever reflows under the reader's eye.
+   *
+   * NEITHER PROPERTY IS REQUIRED. The stylesheet defaults them to "fully
+   * revealed at the seam", which is a static side-by-side diptych with
+   * everything readable. This script only adds the motion.
+   *
+   * Off when: no JS, narrow (the diptych is stacked and the beam is a
+   * horizontal seam), or prefers-reduced-motion. Dragging still works under
+   * reduced motion — it is the reader's own hand, not an animation.
+   * ======================================================================== */
+  (() => {
+    const sections = Array.from(document.querySelectorAll<HTMLElement>('[data-diptych]'));
+    if (!sections.length) return;
+
+    const narrow = window.matchMedia('(max-width: 899px)');
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+    const clamp = (n: number, a: number, b: number) => Math.min(b, Math.max(a, n));
+    const ease = (t: number) => 1 - Math.pow(1 - t, 3);
+
+    /** How far right of the seam the beam starts, as a share of section width. */
+    const band = (s: HTMLElement) => (s.dataset.drag === 'true' ? 0.3 : 0.2);
+
+    const splitPx = (s: HTMLElement) => {
+      const past = s.querySelector<HTMLElement>('.dpr-past');
+      return past && past.offsetWidth ? past.offsetWidth : s.offsetWidth / 2;
+    };
+
+    function apply(s: HTMLElement, reveal: number) {
+      const w = s.offsetWidth || 1;
+      s.style.setProperty('--reveal-in', reveal.toFixed(3));
+      s.style.setProperty('--reveal-x', `${(splitPx(s) + (1 - reveal) * w * band(s)).toFixed(1)}px`);
+      const handle = s.querySelector('[data-beam-handle]');
+      if (handle) {
+        const pct = Math.round(reveal * 100);
+        handle.setAttribute('aria-valuenow', String(pct));
+        handle.setAttribute(
+          'aria-valuetext',
+          pct > 92 ? 'Fully specified' : pct < 8 ? 'As inherited today' : `${pct}% specified`
+        );
+      }
+    }
+
+    function reset(s: HTMLElement) {
+      s.style.removeProperty('--reveal-in');
+      s.style.removeProperty('--reveal-x');
+      delete s.dataset.locked;
+    }
+
+    let queued = false;
+    function frame() {
+      queued = false;
+      const vh = window.innerHeight || 1;
+      for (const s of sections) {
+        const r = s.getBoundingClientRect();
+        // A section the reader has dragged keeps their setting until it leaves.
+        if (s.dataset.locked === 'true') {
+          if (r.bottom < -80 || r.top > vh + 80) delete s.dataset.locked;
+          else continue;
+        }
+        if (s.dataset.wipe !== 'true') {
+          apply(s, 1);
+          continue;
+        }
+        apply(s, ease(clamp((vh * 0.92 - r.top) / (vh * 0.55), 0, 1)));
+      }
+    }
+    const onScroll = () => {
+      if (queued) return;
+      queued = true;
+      requestAnimationFrame(frame);
+    };
+
+    let driving = false;
+    function sync() {
+      const wanted = !narrow.matches && !reduced.matches;
+      if (wanted === driving) return;
+      driving = wanted;
+      if (wanted) {
+        window.addEventListener('scroll', onScroll, { passive: true });
+        window.addEventListener('resize', onScroll);
+        frame();
+      } else {
+        window.removeEventListener('scroll', onScroll);
+        window.removeEventListener('resize', onScroll);
+        sections.forEach(reset);
+      }
+    }
+    narrow.addEventListener('change', sync);
+    reduced.addEventListener('change', sync);
+    sync();
+
+    /* — the draggable seam ------------------------------------------------ */
+    for (const s of sections) {
+      if (s.dataset.drag !== 'true') continue;
+      const handle = s.querySelector<HTMLElement>('[data-beam-handle]');
+      if (!handle) continue;
+      let dragging = false;
+
+      const revealAt = (clientX: number) => {
+        const r = s.getBoundingClientRect();
+        return clamp(1 - (clientX - r.left - splitPx(s)) / (r.width * band(s)), 0, 1);
+      };
+
+      handle.addEventListener('pointerdown', (e) => {
+        dragging = true;
+        s.dataset.locked = 'true';
+        handle.setPointerCapture(e.pointerId);
+        e.preventDefault();
+      });
+      handle.addEventListener('pointermove', (e) => {
+        if (dragging) apply(s, revealAt(e.clientX));
+      });
+      const release = (e: PointerEvent) => {
+        dragging = false;
+        try {
+          handle.releasePointerCapture(e.pointerId);
+        } catch {
+          /* capture already gone */
+        }
+      };
+      handle.addEventListener('pointerup', release);
+      handle.addEventListener('pointercancel', release);
+
+      handle.addEventListener('keydown', (e) => {
+        const now = parseFloat(s.style.getPropertyValue('--reveal-in') || '1');
+        let next = now;
+        if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') next = clamp(now + 0.08, 0, 1);
+        else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') next = clamp(now - 0.08, 0, 1);
+        else if (e.key === 'Home') next = 1;
+        else if (e.key === 'End') next = 0;
+        else return;
+        e.preventDefault();
+        s.dataset.locked = 'true';
+        apply(s, next);
+      });
+    }
+  })();
+</script>
+
+<style>
+  main {
+    display: block;
+  }
+  .dp-foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1.5rem var(--dp-edge);
+    background: var(--color-past-bg);
+    border-top: 1px solid var(--color-past-hairline);
+    color: var(--color-past-text-muted);
+  }
+  .dp-foot nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.25rem;
+  }
+  .dp-foot a {
+    font-family: var(--font-data);
+    font-size: 0.68rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    text-decoration: none;
+    color: var(--color-past-text-muted);
+    border-bottom: 1px solid transparent;
+  }
+  .dp-foot a:hover {
+    color: var(--color-cost-ink);
+    border-bottom-color: var(--color-cost-ink);
+  }
+</style>

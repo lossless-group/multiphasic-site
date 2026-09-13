@@ -1,0 +1,43 @@
+---
+// Beat 7 — The vision. The quietest markup on the page and the loudest type.
+//
+// Three elements, one held screen. The sub is set in the conditioned colour —
+// by this point in the scroll the lattice behind it is fully annealed, so the
+// cyan reads as the state the page has arrived in rather than as an accent.
+
+export interface Props {
+  data: Record<string, any>;
+  closing?: string;
+}
+const { data, closing } = Astro.props;
+---
+
+<div class="vision">
+  <h2 class="lx-display-l lx-rise" id="beat-vision">{data.title}</h2>
+  {data.sub && <p class="vision-sub lx-rise">{data.sub}</p>}
+  {closing && <p class="lx-body vision-note lx-rise">{closing}</p>}
+</div>
+
+<style>
+  .vision {
+    display: flex;
+    flex-direction: column;
+    gap: clamp(1.5rem, 3vw, 2.25rem);
+    max-width: 24ch;
+  }
+  .vision-sub {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: clamp(1.15rem, 2.8vw, 2.1rem);
+    line-height: 1.2;
+    letter-spacing: -0.025em;
+    color: var(--color-conditioned);
+    max-width: 22ch;
+  }
+  .vision-note {
+    max-width: 46ch;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--fx-hairline);
+    margin-top: clamp(1rem, 3vw, 2rem);
+  }
+</style>

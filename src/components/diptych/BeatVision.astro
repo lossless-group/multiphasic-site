@@ -1,0 +1,78 @@
+---
+import DiptychSection from './DiptychSection.astro';
+import DiptychRow from './DiptychRow.astro';
+import type { CollectionEntry } from 'astro:content';
+
+/* ============================================================================
+ * Beat 7 — The vision. The narrowest split on the page: 26% past.
+ *
+ * By the time the reader arrives here the seam has walked from 50 to 72 and
+ * back down to 26. The past half is no longer a column; it is a margin, wide
+ * enough for a label and nothing else. The layout has been making this argument
+ * for seven beats and only now says it out loud.
+ * ========================================================================== */
+
+export interface Props {
+  beat: CollectionEntry<'beats'>;
+  body?: any;
+}
+const { beat, body: Body } = Astro.props;
+const d = beat.data as any;
+---
+
+<DiptychSection id={d.slug_id} split={26} size="tall" intensity="high">
+  <DiptychRow gap="none" align="center">
+    <div class="vis-margin" slot="past">
+      <p class="dx-eyebrow on-past">{d.eyebrow}</p>
+      <hr class="dx-rule on-past" />
+    </div>
+    <div class="vis-body" slot="future">
+      <h2 class="dx-display">{d.title}</h2>
+      <p class="dx-lede on-future vis-sub">{d.sub}</p>
+      {
+        Body && (
+          <div class="dx-prose on-future vis-coda">
+            <Body />
+          </div>
+        )
+      }
+    </div>
+  </DiptychRow>
+</DiptychSection>
+
+<style>
+  .vis-margin {
+    text-align: right;
+  }
+  .vis-margin .dx-rule {
+    margin-left: auto;
+    margin-bottom: 0;
+    margin-top: 1rem;
+  }
+  .vis-body {
+    max-width: 34ch;
+  }
+  .vis-body .dx-display {
+    font-size: clamp(1.9rem, 3.6vw, 3.2rem);
+  }
+  .dx-lede.vis-sub {
+    margin-top: 1.4rem;
+    color: var(--color-gain);
+    font-weight: 400;
+  }
+  .vis-coda {
+    margin-top: 1.6rem;
+  }
+
+  @media (max-width: 899px) {
+    .vis-margin {
+      text-align: left;
+    }
+    .vis-margin .dx-rule {
+      margin-left: 0;
+    }
+    .vis-body {
+      max-width: none;
+    }
+  }
+</style>
