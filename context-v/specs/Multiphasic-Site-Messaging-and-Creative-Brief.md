@@ -15,6 +15,7 @@ authors:
 site_uuid: ae8a047e-9c22-4ccd-be43-14006209848e
 hex_code: lizoel
 publish: true
+type: Specs
 ---
 
 # Multiphasic — Messaging Spine and Creative Brief
