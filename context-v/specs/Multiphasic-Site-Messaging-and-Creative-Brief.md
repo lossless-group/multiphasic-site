@@ -6,7 +6,8 @@ date_modified: 2026-08-26
 date_authored_initial_draft: 2026-08-26
 date_authored_current_draft: 2026-08-26
 at_semantic_version: 0.1.0.0
-augmented_with: "Claude Code (Claude Opus 5)"
+augmented_with:
+  - "Claude Code (Claude Opus 5)"
 status: Draft
 category: Specs
 tags: [Multiphasic, Creative-Brief, Messaging, Design-Direction, Astro-Knots, Deep-Tech, Materials-Science]
